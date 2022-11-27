@@ -1,9 +1,7 @@
 //! A byte-offset based string table.
 //! Commonly used in ELF binaries, Unix archives, and even PE binaries.
 
-use core::fmt;
-use core::ops::Index;
-use core::str;
+use core::{fmt, ops::Index, str};
 use scroll::{ctx, Pread};
 if_alloc! {
     use crate::error;
