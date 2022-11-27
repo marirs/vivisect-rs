@@ -10,6 +10,13 @@ A crate to perform static analysis. This is a port of the vivisect library writt
 ### Usage
 ```toml
 [dependencies]
+vivisect = "0.1.1"
+```
+
+OR
+
+```toml
+[dependencies]
 vivisect = { git = "https://github.com/marirs/vivisect-rs", branch = "master" }
 ```
 

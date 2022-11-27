@@ -3,6 +3,12 @@ name = "vivisect"
 description = "A cross-platform, ELF, Mach-o, and PE binary parsing and loading crate."
 authors = ["Marirs <marirs@gmail.com>"]
 version = "0.1.1"
+keywords = ["vivisect", "disassembler", "cfg", "capstone"]
+categories = ["parsing", "development-tools::debugging"]
+readme = "README.md"
+license-file = "LICENSE"
+repository = "https://github.com/marirs/vivisect-rs"
+homepage = "https://github.com/marirs/vivisect-rs"
 edition = "2021"
 
 [dependencies]
