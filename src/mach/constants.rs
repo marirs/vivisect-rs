@@ -386,7 +386,7 @@ pub mod cputype {
 
     /// Get the cputype and cpusubtype from a name
     pub fn get_arch_from_flag(name: &str) -> Option<(CpuType, CpuSubType)> {
-        get_arch_from_flag_no_alias(name).or_else(|| {
+        get_arch_from_flag_no_alias(name).or({
             // we also handle some common aliases
             match name {
                 // these are used by apple
