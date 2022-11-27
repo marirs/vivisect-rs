@@ -6,12 +6,12 @@
 // (1) Weak of regular_symbol_info type probably needs to be added ?
 // (3) /usr/lib/libstdc++.6.0.9.dylib has flag 0xc at many offsets... they're weak
 
-use crate::error;
-use crate::mach::load_command;
-use alloc::string::String;
-use alloc::vec::Vec;
-use core::fmt::{self, Debug};
-use core::ops::Range;
+use crate::{error, mach::load_command};
+use alloc::{string::String, vec::Vec};
+use core::{
+    fmt::{self, Debug},
+    ops::Range,
+};
 use scroll::{Pread, Uleb128};
 
 type Flag = u64;
@@ -97,7 +97,7 @@ impl<'a> ExportInfo<'a> {
             };
             let lib_symbol_name = bytes.pread::<&str>(offset)?;
             let lib = libs[lib_ordinal as usize];
-            let lib_symbol_name = if lib_symbol_name == "" {
+            let lib_symbol_name = if lib_symbol_name.is_empty() {
                 None
             } else {
                 Some(lib_symbol_name)
@@ -215,7 +215,7 @@ impl<'a> ExportTrie<'a> {
             *offset = *offset + string.len() + 1;
             //println!("\t({}) string_len: {} offset: {:#x}", i, string.len(), *offset);
             // value is relative to export trie base
-            let next_node = Uleb128::read(&self.data, offset)? as usize + self.location.start;
+            let next_node = Uleb128::read(self.data, offset)? as usize + self.location.start;
             //println!("\t({}) string: {} next_node: {:#x}", _i, key, next_node);
             branches.push((key, next_node));
         }
@@ -231,12 +231,12 @@ impl<'a> ExportTrie<'a> {
     ) -> error::Result<()> {
         if start < self.location.end {
             let mut offset = start;
-            let terminal_size = Uleb128::read(&self.data, &mut offset)?;
+            let terminal_size = Uleb128::read(self.data, &mut offset)?;
             // let mut input = String::new();
             // ::std::io::stdin().read_line(&mut input).unwrap();
             // println!("@ {:#x} node: {:#x} current_symbol: {}", start, terminal_size, current_symbol);
             if terminal_size == 0 {
-                let nbranches = Uleb128::read(&self.data, &mut offset)? as usize;
+                let nbranches = Uleb128::read(self.data, &mut offset)? as usize;
                 //println!("\t@ {:#x} BRAN {}", *offset, nbranches);
                 let branches = self.walk_branches(nbranches, current_symbol, offset)?;
                 self.walk_nodes(libs, branches, exports)
@@ -244,10 +244,10 @@ impl<'a> ExportTrie<'a> {
                 // terminal node, but the tricky part is that they can have children...
                 let pos = offset;
                 let children_start = &mut (pos + terminal_size as usize);
-                let nchildren = Uleb128::read(&self.data, children_start)? as usize;
-                let flags = Uleb128::read(&self.data, &mut offset)?;
+                let nchildren = Uleb128::read(self.data, children_start)? as usize;
+                let flags = Uleb128::read(self.data, &mut offset)?;
                 //println!("\t@ {:#x} TERM {} flags: {:#x}", offset, nchildren, flags);
-                let info = ExportInfo::parse(&self.data, libs, flags, offset)?;
+                let info = ExportInfo::parse(self.data, libs, flags, offset)?;
                 let export = Export::new(current_symbol.clone(), info);
                 //println!("\t{:?}", &export);
                 exports.push(export);
