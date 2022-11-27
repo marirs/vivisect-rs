@@ -23,7 +23,7 @@ const SIZEOF_FILE_IDENTIFER: usize = 16;
 const SIZEOF_FILE_SIZE: usize = 10;
 
 #[repr(C)]
-#[derive(Debug, Clone, PartialEq, Pread, Pwrite, SizeWith)]
+#[derive(Debug, Clone, PartialEq, Eq, Pread, Pwrite, SizeWith)]
 /// A Unix Archive Header - meta data for the file/byte blob/whatever that follows exactly after.
 /// All data is right-padded with spaces ASCII `0x20`. The Binary layout is as follows:
 ///
@@ -58,7 +58,7 @@ pub struct MemberHeader {
     pub terminator: [u8; 2],
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Header<'a> {
     pub name: &'a str,
     pub size: usize,
@@ -73,12 +73,12 @@ impl MemberHeader {
             .pread_with::<&str>(0, ::scroll::ctx::StrCtx::Length(SIZEOF_FILE_IDENTIFER))?)
     }
     pub fn size(&self) -> Result<usize> {
-        match usize::from_str_radix(
-            self.file_size
-                .pread_with::<&str>(0, ::scroll::ctx::StrCtx::Length(self.file_size.len()))?
-                .trim_end(),
-            10,
-        ) {
+        match self
+            .file_size
+            .pread_with::<&str>(0, ::scroll::ctx::StrCtx::Length(self.file_size.len()))?
+            .trim_end()
+            .parse::<usize>()
+        {
             Ok(file_size) => Ok(file_size),
             Err(err) => Err(Error::Malformed(format!(
                 "{:?} Bad file_size in header: {:?}",
@@ -88,7 +88,7 @@ impl MemberHeader {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Represents a single entry in the archive
 pub struct Member<'a> {
     /// The entry header
@@ -176,7 +176,7 @@ impl<'a> Member<'a> {
     pub fn extended_name(&self) -> &'a str {
         if let Some(bsd_name) = self.bsd_name {
             bsd_name
-        } else if let Some(ref sysv_name) = self.sysv_name {
+        } else if let Some(sysv_name) = self.sysv_name {
             sysv_name
         } else {
             self.header.name.trim_end_matches(' ').trim_end_matches('/')
@@ -371,7 +371,7 @@ impl<'a> NameIndex<'a> {
 
     pub fn get(&self, name: &str) -> Result<&'a str> {
         let idx = name.trim_start_matches('/').trim_end();
-        match usize::from_str_radix(idx, 10) {
+        match idx.parse::<usize>() {
             Ok(idx) => {
                 let name = match self.strtab.get_at(idx + 1) {
                     Some(result) => Ok(result),
@@ -381,7 +381,7 @@ impl<'a> NameIndex<'a> {
                     ))),
                 }?;
 
-                if name != "" {
+                if !name.is_empty() {
                     Ok(name.trim_end_matches('/'))
                 } else {
                     Err(Error::Malformed(format!(
@@ -398,7 +398,7 @@ impl<'a> NameIndex<'a> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 /// The type of symbol index can be present in an archive. Can serve as an indication of the
 /// archive format.
 pub enum IndexType {
@@ -516,7 +516,7 @@ impl<'a> Archive<'a> {
                     name, member_offset
                 ))
             })?;
-            symbol_index.insert(&name, member_index);
+            symbol_index.insert(name, member_index);
         }
 
         Ok(Archive {
@@ -566,7 +566,7 @@ impl<'a> Archive<'a> {
         let mut result = self
             .member_array
             .iter()
-            .map(|ref member| (member.extended_name(), *member, Vec::new()))
+            .map(|member| (member.extended_name(), member, Vec::new()))
             .collect::<Vec<_>>();
 
         // walk the symbol index once, adding each symbol to the appropriate result Vec
