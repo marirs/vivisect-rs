@@ -11,7 +11,7 @@ if_alloc! {
 /// A common string table format which is indexed by byte offsets (and not
 /// member index). Constructed using [`parse`](#method.parse)
 /// with your choice of delimiter. Please be careful.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Strtab<'a> {
     delim: ctx::StrCtx,
     bytes: &'a [u8],
@@ -181,16 +181,16 @@ impl<'a> fmt::Debug for Strtab<'a> {
     }
 }
 
-impl<'a> Default for Strtab<'a> {
-    fn default() -> Self {
-        Self {
-            delim: ctx::StrCtx::default(),
-            bytes: &[],
-            #[cfg(feature = "alloc")]
-            strings: Vec::new(),
-        }
-    }
-}
+// impl<'a> Default for Strtab<'a> {
+//     fn default() -> Self {
+//         Self {
+//             delim: ctx::StrCtx::default(),
+//             bytes: &[],
+//             #[cfg(feature = "alloc")]
+//             strings: Vec::new(),
+//         }
+//     }
+// }
 
 impl<'a> Index<usize> for Strtab<'a> {
     type Output = str;

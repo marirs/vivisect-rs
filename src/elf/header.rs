@@ -5,7 +5,7 @@ macro_rules! elf_header {
         use core::fmt;
 
         #[repr(C)]
-        #[derive(Clone, Copy, Default, PartialEq)]
+        #[derive(Clone, Copy, Default, PartialEq, Eq)]
         pub struct Header {
             /// Magic number and other info
             pub e_ident: [u8; SIZEOF_IDENT],
@@ -200,7 +200,7 @@ if_alloc! {
     use crate::container::{Ctx, Container};
     use alloc::string::ToString;
 
-    #[derive(Copy, Clone, PartialEq)]
+    #[derive(Copy, Clone, PartialEq, Eq)]
     /// An ELF header
     pub struct Header {
         pub e_ident           : [u8; SIZEOF_IDENT],

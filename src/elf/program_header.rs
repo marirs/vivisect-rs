@@ -89,7 +89,7 @@ if_alloc! {
     use crate::container::{Ctx, Container};
     use alloc::vec::Vec;
 
-    #[derive(Default, PartialEq, Clone)]
+    #[derive(Default, PartialEq, Eq, Clone)]
     /// A unified ProgramHeader - convertable to and from 32-bit and 64-bit variants
     pub struct ProgramHeader {
         pub p_type  : u32,
@@ -362,7 +362,7 @@ pub mod program_header32 {
     pub use crate::elf::program_header::*;
 
     #[repr(C)]
-    #[derive(Copy, Clone, PartialEq, Default)]
+    #[derive(Copy, Clone, PartialEq, Eq, Default)]
     #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
     /// A 32-bit ProgramHeader typically specifies how to map executable and data segments into memory
     pub struct ProgramHeader {
@@ -396,7 +396,7 @@ pub mod program_header64 {
     pub use crate::elf::program_header::*;
 
     #[repr(C)]
-    #[derive(Copy, Clone, PartialEq, Default)]
+    #[derive(Copy, Clone, PartialEq, Eq, Default)]
     #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
     /// A 64-bit ProgramHeader typically specifies how to map executable and data segments into memory
     pub struct ProgramHeader {

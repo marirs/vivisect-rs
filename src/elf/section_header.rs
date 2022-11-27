@@ -4,7 +4,7 @@ macro_rules! elf_section_header {
         // See: https://github.com/rust-lang/rust/issues/65090#issuecomment-538668155
 
         #[repr(C)]
-        #[derive(Copy, Clone, Eq, PartialEq, Default)]
+        #[derive(Copy, Clone, PartialEq, Eq, Default)]
         #[cfg_attr(
             feature = "alloc",
             derive(scroll::Pread, scroll::Pwrite, scroll::SizeWith)
@@ -380,7 +380,7 @@ if_alloc! {
     #[cfg(feature = "endian_fd")]
     use alloc::vec::Vec;
 
-    #[derive(Default, PartialEq, Clone)]
+    #[derive(Default, PartialEq, Eq, Clone)]
     /// A unified SectionHeader - convertable to and from 32-bit and 64-bit variants
     pub struct SectionHeader {
         /// Section name (string tbl index)
@@ -450,7 +450,7 @@ if_alloc! {
                 return Ok(Vec::new());
             }
             let empty_sh = bytes.gread_with::<SectionHeader>(&mut offset, ctx)?;
-            if count == 0 as usize {
+            if count == 0_usize {
                 // Zero count means either no section headers if offset is also zero (checked
                 // above), or the number of section headers overflows SHN_LORESERVE, in which
                 // case the count is stored in the sh_size field of the null section header.

@@ -73,7 +73,7 @@ macro_rules! elf_reloc {
         #[cfg(feature = "alloc")]
         use scroll::{Pread, Pwrite, SizeWith};
         #[repr(C)]
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Eq, Default)]
         #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
         /// Relocation with an explicit addend
         pub struct Rela {
@@ -85,7 +85,7 @@ macro_rules! elf_reloc {
             pub r_addend: $isize,
         }
         #[repr(C)]
-        #[derive(Clone, PartialEq, Default)]
+        #[derive(Clone, PartialEq, Eq, Default)]
         #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
         /// Relocation without an addend
         pub struct Rel {
@@ -282,7 +282,7 @@ if_alloc! {
     use crate::container::{Ctx, Container};
     use alloc::vec::Vec;
 
-    #[derive(Clone, Copy, PartialEq, Default)]
+    #[derive(Clone, Copy, PartialEq, Eq, Default)]
     /// A unified ELF relocation structure
     pub struct Reloc {
         /// Address

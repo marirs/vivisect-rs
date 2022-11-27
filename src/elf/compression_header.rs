@@ -89,7 +89,7 @@ pub mod compression_header32 {
     pub use crate::elf::compression_header::*;
 
     #[repr(C)]
-    #[derive(Copy, Clone, Eq, PartialEq, Default)]
+    #[derive(Copy, Clone, PartialEq, Eq, Default)]
     #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
     /// The compression header is used at the start of SHF_COMPRESSED sections
     pub struct CompressionHeader {
@@ -124,7 +124,7 @@ pub mod compression_header64 {
     pub use crate::elf::compression_header::*;
 
     #[repr(C)]
-    #[derive(Copy, Clone, Eq, PartialEq, Default)]
+    #[derive(Copy, Clone, PartialEq, Eq, Default)]
     #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
     /// The compression header is used at the start of SHF_COMPRESSED sections
     pub struct CompressionHeader {
@@ -169,7 +169,7 @@ if_alloc! {
     use scroll::ctx;
     use crate::container::{Container, Ctx};
 
-    #[derive(Default, PartialEq, Clone)]
+    #[derive(Default, PartialEq, Eq, Clone)]
     /// A unified CompressionHeader - convertable to and from 32-bit and 64-bit variants
     pub struct CompressionHeader {
         /// Compression format

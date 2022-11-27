@@ -4,7 +4,7 @@ macro_rules! elf_dyn {
         // See: https://github.com/rust-lang/rust/issues/65090#issuecomment-538668155
 
         #[repr(C)]
-        #[derive(Copy, Clone, PartialEq, Default)]
+        #[derive(Copy, Clone, PartialEq, Eq, Default)]
         #[cfg_attr(
             feature = "alloc",
             derive(scroll::Pread, scroll::Pwrite, scroll::SizeWith)
@@ -330,7 +330,7 @@ if_alloc! {
     use crate::strtab::Strtab;
     use alloc::vec::Vec;
 
-    #[derive(Default, PartialEq, Clone)]
+    #[derive(Default, PartialEq, Eq, Clone)]
     pub struct Dyn {
         pub d_tag: u64,
         pub d_val: u64,
@@ -593,7 +593,7 @@ macro_rules! elf_dynamic_info_std_impl {
         }
 
         /// Important dynamic linking info generated via a single pass through the `_DYNAMIC` array
-        #[derive(Default, PartialEq, Clone)]
+        #[derive(Default, PartialEq, Eq, Clone)]
         pub struct DynamicInfo {
             pub rela: usize,
             pub relasz: usize,

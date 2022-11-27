@@ -271,7 +271,7 @@ pub mod sym32 {
     pub use crate::elf::sym::*;
 
     #[repr(C)]
-    #[derive(Clone, Copy, PartialEq, Default)]
+    #[derive(Clone, Copy, PartialEq, Eq, Default)]
     #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
     /// 32-bit Sym - used for both static and dynamic symbol information in a binary
     pub struct Sym {
@@ -301,7 +301,7 @@ pub mod sym64 {
     pub use crate::elf::sym::*;
 
     #[repr(C)]
-    #[derive(Clone, Copy, PartialEq, Default)]
+    #[derive(Clone, Copy, PartialEq, Eq, Default)]
     #[cfg_attr(feature = "alloc", derive(Pread, Pwrite, SizeWith))]
     /// 64-bit Sym - used for both static and dynamic symbol information in a binary
     pub struct Sym {
@@ -336,7 +336,7 @@ use core::fmt;
 use scroll::ctx;
 use scroll::ctx::SizeWith;
 
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 /// A unified Sym definition - convertible to and from 32-bit and 64-bit variants
 pub struct Sym {
     pub st_name: usize,

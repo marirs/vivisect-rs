@@ -894,7 +894,7 @@ impl VivWorkspace {
         }
         let mcbname = format!(
             "_fmcb_{}",
-            key.split(":").collect::<Vec<_>>().get(0).unwrap()
+            key.split(':').collect::<Vec<_>>().first().unwrap()
         );
     }
 
@@ -907,16 +907,16 @@ impl VivWorkspace {
         let mut arch = ARCH_DEFAULT;
         if loct_up.is_some() {
             let loct_up_unwrapped = loct_up.as_ref().cloned().unwrap();
-            if loct_up_unwrapped.3.len() > 0 && loct_up_unwrapped.2 == LOC_OP {
+            if !loct_up_unwrapped.3.is_empty() && loct_up_unwrapped.2 == LOC_OP {
                 // arch = loct_up_unwrapped.3;
             }
         }
         let key = (
             va,
             arch,
-            b[..16].iter().map(|x| x.clone()).collect::<Vec<_>>(),
+            b[..16].iter().copied().collect::<Vec<_>>(),
         );
-        let valu = self._op_cache.get(&key).unwrap().clone();
+        let valu = *self._op_cache.get(&key).unwrap();
         self._op_cache.insert(key, valu);
         // FIXME Return a properly formed opcode
         Some(OpCode::new(
@@ -1001,7 +1001,7 @@ impl VivWorkspace {
             error!("Invalid unicode size: {}", size);
         }
         let subs = self.get_substrings(va, size, LOC_UNI);
-        let (p_va, p_size, t_info) = self.get_str_info(va, size, subs.clone());
+        let (p_va, p_size, t_info) = self.get_str_info(va, size, subs);
         if self.get_name(va, false).is_none() {
             let m = self
                 .read_memory(va, size - 1)
@@ -1043,11 +1043,12 @@ impl VivWorkspace {
 
     pub fn get_location(&self, va: i32) -> Option<(i32, i32, i32, Vec<(i32, i32)>)> {
         let loc = self.locmap.get_map_lookup(va);
-        if loc.is_none() {
-            return None;
-        }
+        // if loc.is_none() {
+        //     return None;
+        // }
+        loc.as_ref()?;
         return if vec![LOC_STRING, LOC_UNI].contains(&loc.as_ref().cloned().unwrap().2) {
-            if loc.as_ref().cloned().unwrap().3.len() == 0 {
+            if loc.as_ref().cloned().unwrap().3.is_empty() {
                 return loc;
             }
             let mut subs = loc.as_ref().cloned().unwrap().3;
@@ -1118,7 +1119,7 @@ impl VivWorkspace {
         {
             let arch = loc.as_ref().cloned().unwrap().3;
         }
-        let realfva = self.add_entry_point(va);
+        self.add_entry_point(va);
         if meta.is_some() {
             for (key, val) in meta.as_ref().cloned().unwrap() {
                 self.set_function_meta(va, key.as_str(), val);
@@ -1135,20 +1136,21 @@ impl VivWorkspace {
     /// If va falls within a known function in the workspace, we return "funcname+<delta>".
     /// If not, and the va falls within a mapped binary, we return "filename+<delta>"
     pub fn get_name(&self, va: i32, smart: bool) -> Option<String> {
-        let mut name = self.name_by_va.get(&va).map(|x| x.clone());
+        let mut name = self.name_by_va.get(&va).cloned();
         if name.is_some() || !smart {
             return name;
         }
         let mut base_va = self.get_function(va).unwrap();
-        let mut base_name = self.name_by_va.get(&base_va).map(|x| x.clone());
+        let mut base_name = self.name_by_va.get(&base_va).cloned();
         if self.is_function(va) {
             base_name = Some(format!("sub_{:#0x}", va));
         }
         if base_name.is_none() {
             base_name = self.get_file_by_va(va);
-            if base_name.is_none() {
-                return None;
-            }
+            // if base_name.is_none() {
+            //     return None;
+            // }
+            base_name.as_ref()?;
             base_va =
                 self.get_file_meta(base_name.as_ref().cloned().unwrap().as_str(), "imagebase");
         }
@@ -1180,7 +1182,7 @@ impl VivWorkspace {
                 );
             } else {
                 let fname = seg_tup.as_ref().cloned().unwrap().3;
-                if fname.len() > 0 {
+                if !fname.is_empty() {
                     name = format!("{}.{}", fname, name);
                 }
             }
@@ -1203,7 +1205,7 @@ impl VivWorkspace {
                 let mut new_old_va: Option<i32> = self.va_by_name(new_name.clone());
                 while self.va_by_name(new_name.clone()).is_some() {
                     if new_old_va.as_ref().cloned().unwrap() == va {
-                        return Some(new_name.clone());
+                        return Some(new_name);
                     }
                     debug!(
                         "makeName: {} already lives at {:#0x}",
@@ -1251,8 +1253,8 @@ impl VivWorkspace {
             return Some(va);
         }
         let cbtup = self.get_code_block(va);
-        if cbtup.is_some() {
-            return Some(cbtup.unwrap().2);
+        if let Some(cbtup_val) = cbtup {
+            return Some(cbtup_val.2);
         }
         None
     }
@@ -1286,7 +1288,7 @@ impl VivWorkspace {
                     loc.as_ref().cloned().unwrap().0,
                     loc.as_ref().cloned().unwrap().1,
                 ));
-                if loc.as_ref().cloned().unwrap().3.len() > 0 {
+                if !loc.as_ref().cloned().unwrap().3.is_empty() {
                     subs.append(&mut loc.as_ref().cloned().unwrap().3);
                 }
             }
@@ -1330,7 +1332,7 @@ impl VivWorkspace {
     }
 
     pub fn va_by_name(&self, name: String) -> Option<i32> {
-        self.va_by_name.get(&name).map(|x| *x)
+        self.va_by_name.get(&name).copied()
     }
 
     pub fn create_save_mark(&self) {
@@ -1340,9 +1342,10 @@ impl VivWorkspace {
     pub fn get_file_by_va(&self, va: i32) -> Option<String> {
         let segtup = self.get_segment(va);
         info!("Segment: {:?}", segtup);
-        if segtup.is_none() {
-            return None;
-        }
+        // if segtup.is_none() {
+        //     return None;
+        // }
+        segtup.as_ref()?;
         Some(segtup.unwrap().3)
     }
 
@@ -1351,10 +1354,10 @@ impl VivWorkspace {
         for seg in self.segments.clone() {
             let (sva, ssize, sname, sfile) = seg.clone();
             if va >= sva && va < (sva + ssize) {
-                return Some(seg.clone());
+                return Some(seg);
             }
         }
-        return None;
+        None
     }
 
     pub fn add_segment(&mut self, va: i32, size: i32, name: &str, filename: String) {
@@ -1398,8 +1401,9 @@ impl VivWorkspace {
         //     self.load_workspace(filename);
         //     return self.norm_filename(filename);
         // }
-        let fname = parse_file(self.clone(), filename, base_addr);
-        fname
+        // let fname = parse_file(self.clone(), filename, base_addr);
+        // fname
+        parse_file(self.clone(), filename, base_addr)
     }
 
     pub fn add_file(&mut self, filename: &str, imagebase: i32, bytes: Vec<u8>) -> String {
@@ -1458,10 +1462,11 @@ impl Memory for VivWorkspace {
                 if size > max_read_len {
                     let mut new_bytes = Vec::new();
                     new_bytes.append(
-                        &mut m_bytes[offset as usize..]
-                            .iter()
-                            .map(|x| x.clone())
-                            .collect::<Vec<_>>(),
+                        &mut m_bytes[offset as usize..].to_vec(),
+                            // .iter()
+                            // .copied()
+                            // // .map(|x| *x)
+                            // .collect::<Vec<_>>(),
                     );
                     new_bytes.append(
                         &mut self
@@ -1500,39 +1505,44 @@ impl Memory for VivWorkspace {
                 if bytes_len > max_write_len {
                     let mut new_bytes = Vec::new();
                     new_bytes.append(
-                        &mut mbytes[..offset as usize]
-                            .iter()
-                            .map(|x| x.clone())
-                            .collect::<Vec<_>>(),
+                        &mut mbytes[..offset as usize].to_vec(),
+                            // .iter()
+                            // .copied()
+                            // // .map(|x| *x)
+                            // .collect::<Vec<_>>(),
                     );
                     new_bytes.append(
-                        &mut bytes[..max_write_len as usize]
-                            .iter()
-                            .map(|x| x.clone())
-                            .collect::<Vec<_>>(),
+                        &mut bytes[..max_write_len as usize].to_vec(),
+                            // .iter()
+                            // .copied()
+                            // // .map(|x| *x)
+                            // .collect::<Vec<_>>(),
                     );
                     mapdef.3 = new_bytes;
                     self.write_memory(
                         mva + msize,
-                        bytes[max_write_len as usize..]
-                            .iter()
-                            .map(|x| x.clone())
-                            .collect::<Vec<_>>(),
+                        bytes[max_write_len as usize..].to_vec(),
+                            // .iter()
+                            // .copied()
+                            // // .map(|x| *x)
+                            // .collect::<Vec<_>>(),
                     );
                 } else {
                     let mut new_bytes = Vec::new();
                     new_bytes.append(
-                        &mut mbytes[..offset as usize]
-                            .iter()
-                            .map(|x| x.clone())
-                            .collect::<Vec<_>>(),
+                        &mut mbytes[..offset as usize].to_vec(),
+                            // .iter()
+                            // .copied()
+                            // // .map(|x| *x)
+                            // .collect::<Vec<_>>(),
                     );
                     new_bytes.append(&mut bytes.clone());
                     new_bytes.append(
-                        &mut mbytes[(offset + bytes_len) as usize..]
-                            .iter()
-                            .map(|x| x.clone())
-                            .collect::<Vec<_>>(),
+                        &mut mbytes[(offset + bytes_len) as usize..].to_vec(),
+                            // .iter()
+                            // .copied()
+                            // // .map(|x| *x)
+                            // .collect::<Vec<_>>(),
                     );
                     mapdef.3 = new_bytes;
                 }
@@ -1569,9 +1579,11 @@ impl Memory for VivWorkspace {
             fname,
             bytes.len()
         );
-        if alignment.is_some() {
+        // if alignment.is_some() {
+        if let Some(a_val) = alignment {
             let cur_len = bytes.len();
-            let new_len: usize = align(cur_len, alignment.unwrap() as usize);
+            // let new_len: usize = align(cur_len, alignment.unwrap() as usize);
+            let new_len: usize = align(cur_len, a_val as usize);
             let delta = new_len - cur_len;
             bytes.append(&mut vec![0x00; delta]);
         }

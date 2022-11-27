@@ -49,7 +49,7 @@ pub mod strtab;
 pub mod container {
     pub use scroll::Endian;
 
-    #[derive(Debug, Copy, Clone, PartialEq)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     /// The size of a binary container
     pub enum Container {
         Little,
@@ -78,7 +78,7 @@ pub mod container {
         }
     }
 
-    #[derive(Debug, Copy, Clone, PartialEq)]
+    #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
     /// A binary parsing context, including the container size and underlying byte endianness
     pub struct Ctx {
         pub container: Container,
@@ -126,15 +126,15 @@ pub mod container {
         }
     }
 
-    impl Default for Ctx {
-        #[inline]
-        fn default() -> Self {
-            Ctx {
-                container: Container::default(),
-                le: scroll::Endian::default(),
-            }
-        }
-    }
+    // impl Default for Ctx {
+    //     #[inline]
+    //     fn default() -> Self {
+    //         Ctx {
+    //             container: Container::default(),
+    //             le: scroll::Endian::default(),
+    //         }
+    //     }
+    // }
 }
 
 macro_rules! if_everything {
@@ -181,7 +181,7 @@ if_everything! {
             Ok(Hint::Elf(HintData { is_lsb, is_64 }))
         } else if &bytes[0..archive::SIZEOF_MAGIC] == archive::MAGIC {
             Ok(Hint::Archive)
-        } else if (&bytes[0..2]).pread_with::<u16>(0, LE)? == pe::header::DOS_MAGIC {
+        } else if (bytes[0..2]).pread_with::<u16>(0, LE)? == pe::header::DOS_MAGIC {
             Ok(Hint::PE)
         } else {
             let (magic, maybe_ctx) = mach::parse_magic_and_ctx(bytes, 0)?;
@@ -253,7 +253,7 @@ if_everything! {
                     Hint::Unknown(magic) => Ok(Object::Unknown(magic))
                 }
             } else {
-                Err(error::Error::Malformed(format!("Object is too small.")))
+                Err(error::Error::Malformed("Object is too small.".to_string()))
             }
         }
     }
