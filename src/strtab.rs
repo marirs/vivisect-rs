@@ -96,7 +96,7 @@ impl<'a> Strtab<'a> {
     /// If you want to get the correct contents of `strtab` as `Vec`, use the following example.
     ///
     /// # Examples
-    /// ```rust
+    /// ```ignore
     /// use vivisect::error::Error;
     ///
     /// pub fn show_shdr_strtab(bytes: &[u8]) -> Result<(), Error> {
