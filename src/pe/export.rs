@@ -11,7 +11,7 @@ use crate::pe::section_table;
 use crate::pe::utils;
 
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite)]
 pub struct ExportDirectoryTable {
     pub export_flags: u32,
     pub time_date_stamp: u32,

@@ -30,15 +30,15 @@ fn base64_decode_string_entry(s: &str) -> Result<usize, ()> {
     let mut val = 0;
     for c in s.bytes() {
         let v = if (b'A'..=b'Z').contains(&c) {
-        // let v = if b'A' <= c && c <= b'Z' {
+            // let v = if b'A' <= c && c <= b'Z' {
             // 00..=25
             c - b'A'
         } else if (b'a'..=b'z').contains(&c) {
-        // } else if b'a' <= c && c <= b'z' {
+            // } else if b'a' <= c && c <= b'z' {
             // 26..=51
             c - b'a' + 26
         } else if (b'0'..=b'9').contains(&c) {
-        // } else if b'0' <= c && c <= b'9' {
+            // } else if b'0' <= c && c <= b'9' {
             // 52..=61
             c - b'0' + 52
         } else if c == b'+' {

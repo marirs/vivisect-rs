@@ -8,7 +8,7 @@ use scroll::{Pread, Pwrite, SizeWith};
 
 /// standard COFF fields
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
 pub struct StandardFields32 {
     pub magic: u16,
     pub major_linker_version: u8,
@@ -26,7 +26,7 @@ pub const SIZEOF_STANDARD_FIELDS_32: usize = 28;
 
 /// standard 64-bit COFF fields
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
 pub struct StandardFields64 {
     pub magic: u16,
     pub major_linker_version: u8,
@@ -41,7 +41,7 @@ pub struct StandardFields64 {
 pub const SIZEOF_STANDARD_FIELDS_64: usize = 24;
 
 /// Unified 32/64-bit COFF fields
-#[derive(Debug, PartialEq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub struct StandardFields {
     pub magic: u16,
     pub major_linker_version: u8,
@@ -94,7 +94,7 @@ pub const MAGIC_64: u16 = 0x20b;
 
 /// Windows specific fields
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
 pub struct WindowsFields32 {
     pub image_base: u32,
     pub section_alignment: u32,
@@ -123,7 +123,7 @@ pub const SIZEOF_WINDOWS_FIELDS_32: usize = 68;
 
 /// 64-bit Windows specific fields
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
 pub struct WindowsFields64 {
     pub image_base: u64,
     pub section_alignment: u32,
@@ -234,7 +234,7 @@ impl From<WindowsFields32> for WindowsFields {
 
 pub type WindowsFields = WindowsFields64;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct OptionalHeader {
     pub standard_fields: StandardFields,
     pub windows_fields: WindowsFields,
@@ -270,7 +270,7 @@ impl<'a> ctx::TryFromCtx<'a, Endian> for OptionalHeader {
             _ => return Err(error::Error::BadMagic(u64::from(magic))),
         };
         let data_directories = data_directories::DataDirectories::parse(
-            &bytes,
+            bytes,
             windows_fields.number_of_rva_and_sizes as usize,
             offset,
         )?;

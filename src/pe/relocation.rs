@@ -78,7 +78,7 @@ pub const IMAGE_REL_AMD64_SSPAN32: u16 = 0x0010;
 
 /// A COFF relocation.
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
 pub struct Relocation {
     /// The address of the item to which relocation is applied.
     ///

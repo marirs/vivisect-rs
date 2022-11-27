@@ -1,14 +1,12 @@
 //! The Mach-o, mostly zero-copy, binary format parser and raw struct definitions
+use crate::{container, error};
 use alloc::vec::Vec;
 use core::fmt;
-
 use log::debug;
-
-use scroll::ctx::SizeWith;
-use scroll::{Pread, BE};
-
-use crate::container;
-use crate::error;
+use scroll::{
+    ctx::SizeWith,
+    {Pread, BE},
+};
 
 pub mod bind_opcodes;
 pub mod constants;
@@ -399,7 +397,8 @@ impl<'a> MultiArch<'a> {
         let offset = (index * fat::SIZEOF_FAT_ARCH) + self.start;
         let arch = self.data.pread_with::<fat::FatArch>(offset, scroll::BE)?;
         let bytes = arch.slice(self.data);
-        Ok(MachO::parse(bytes, 0)?)
+        // Ok(MachO::parse(bytes, 0)?)
+        MachO::parse(bytes, 0)
     }
 
     pub fn find<F: Fn(error::Result<fat::FatArch>) -> bool>(
@@ -452,7 +451,7 @@ impl<'a> Mach<'a> {
             let error = error::Error::Malformed("size is smaller than a magical number".into());
             return Err(error);
         }
-        let magic = peek(&bytes, 0)?;
+        let magic = peek(bytes, 0)?;
         match magic {
             fat::FAT_MAGIC => {
                 let multi = MultiArch::new(bytes)?;

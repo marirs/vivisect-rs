@@ -7,7 +7,7 @@ use scroll::{IOread, IOwrite, Pread, Pwrite, SizeWith};
 
 /// DOS header present in all PE binaries
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub struct DosHeader {
     /// Magic number: 5a4d
     pub signature: u16,
@@ -61,7 +61,7 @@ impl DosHeader {
 
 /// COFF Header
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
 pub struct CoffHeader {
     /// The machine type
     pub machine: u16,
@@ -180,11 +180,12 @@ impl CoffHeader {
         // The offset needs to be advanced in order to read the strings.
         offset += length_field_size;
 
-        Ok(strtab::Strtab::parse(bytes, offset, length, 0)?)
+        // Ok(strtab::Strtab::parse(bytes, offset, length, 0)?)
+        strtab::Strtab::parse(bytes, offset, length, 0)
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub struct Header {
     pub dos_header: DosHeader,
     /// PE Magic: PE\0\0, little endian
@@ -195,12 +196,12 @@ pub struct Header {
 
 impl Header {
     pub fn parse(bytes: &[u8]) -> error::Result<Self> {
-        let dos_header = DosHeader::parse(&bytes)?;
+        let dos_header = DosHeader::parse(bytes)?;
         let mut offset = dos_header.pe_pointer as usize;
         let signature = bytes.gread_with(&mut offset, scroll::LE).map_err(|_| {
             error::Error::Malformed(format!("cannot parse PE signature (offset {:#x})", offset))
         })?;
-        let coff_header = CoffHeader::parse(&bytes, &mut offset)?;
+        let coff_header = CoffHeader::parse(bytes, &mut offset)?;
         let optional_header = if coff_header.size_of_optional_header > 0 {
             Some(bytes.pread::<optional_header::OptionalHeader>(offset)?)
         } else {

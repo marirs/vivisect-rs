@@ -1,12 +1,10 @@
-use crate::error;
+use crate::{
+    error,
+    pe::{data_directories, options, section_table, utils},
+};
 use scroll::{Pread, Pwrite, SizeWith};
 
-use crate::pe::data_directories;
-use crate::pe::options;
-use crate::pe::section_table;
-use crate::pe::utils;
-
-#[derive(Debug, PartialEq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub struct DebugData<'a> {
     pub image_debug_directory: ImageDebugDirectory,
     pub codeview_pdb70_debug_info: Option<CodeviewPDB70DebugInfo<'a>>,
@@ -54,7 +52,7 @@ impl<'a> DebugData<'a> {
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms680307(v=vs.85).aspx
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
 pub struct ImageDebugDirectory {
     pub characteristics: u32,
     pub time_date_stamp: u32,
@@ -118,7 +116,7 @@ pub const CODEVIEW_CV41_MAGIC: u32 = 0x3930_424e;
 
 // http://llvm.org/doxygen/CVDebugRecord_8h_source.html
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub struct CodeviewPDB70DebugInfo<'a> {
     pub codeview_signature: u32,
     pub signature: [u8; 16],

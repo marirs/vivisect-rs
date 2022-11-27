@@ -2,7 +2,7 @@ use crate::error;
 use scroll::{Pread, Pwrite, SizeWith};
 
 #[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default, Pread, Pwrite, SizeWith)]
 pub struct DataDirectory {
     pub virtual_address: u32,
     pub size: u32,
@@ -18,7 +18,7 @@ impl DataDirectory {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub struct DataDirectories {
     pub data_directories: [Option<DataDirectory>; NUM_DATA_DIRECTORIES],
 }

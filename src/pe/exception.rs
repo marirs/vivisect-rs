@@ -100,7 +100,7 @@ const UNWIND_CODE_SIZE: usize = 2;
 ///
 /// [`ExceptionData::get_unwind_info`]: struct.ExceptionData.html#method.get_unwind_info
 #[repr(C)]
-#[derive(Copy, Clone, PartialEq, Default, Pread, Pwrite)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Pread, Pwrite)]
 pub struct RuntimeFunction {
     /// Function start address.
     pub begin_address: u32,
@@ -162,7 +162,7 @@ impl ExactSizeIterator for RuntimeFunctionIterator<'_> {}
 ///
 ///  - `0` - `15`: General purpose registers
 ///  - `17` - `32`: XMM registers
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Register(pub u8);
 
 impl Register {
@@ -212,7 +212,7 @@ impl Register {
 }
 
 /// An unsigned offset to a value in the local stack frame.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StackFrameOffset {
     /// Offset from the current RSP, that is, the lowest address of the fixed stack allocation.
     ///
@@ -246,7 +246,7 @@ impl fmt::Display for Register {
 ///
 /// Unwind operations can be used to reverse the effects of the function prolog and restore register
 /// values of parent stack frames that have been saved to the stack.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UnwindOperation {
     /// Push a nonvolatile integer register, decrementing `RSP` by 8.
     PushNonVolatile(Register),
@@ -315,7 +315,7 @@ pub enum UnwindOperation {
 }
 
 /// Context used to parse unwind operation.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct UnwindOpContext {
     /// Version of the unwind info.
     version: u8,
@@ -329,7 +329,7 @@ struct UnwindOpContext {
 }
 
 /// An unwind operation that is executed at a particular place in the function prolog.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct UnwindCode {
     /// Offset of the corresponding instruction in the function prolog.
     ///
@@ -475,7 +475,7 @@ impl FusedIterator for UnwindCodeIterator<'_> {}
 
 /// A language-specific handler that is called as part of the search for an exception handler or as
 /// part of an unwind.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum UnwindHandler<'a> {
     /// The image-relative address of an exception handler and its implementation-defined data.
     ExceptionHandler(u32, &'a [u8]),
@@ -542,7 +542,8 @@ impl<'a> UnwindInfo<'a> {
         let version = version_flags & 0b111;
         let flags = version_flags >> 3;
 
-        if version < 1 || version > 2 {
+        // if version < 1 || version > 2 {
+        if !(1..=2).contains(&version) {
             let msg = format!("unsupported unwind code version ({})", version);
             return Err(error::Error::Malformed(msg));
         }
