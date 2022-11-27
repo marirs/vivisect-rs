@@ -1,15 +1,19 @@
 #![allow(dead_code, unused)]
 
-use crate::constants::{
-    ARCH_DEFAULT, ARCH_MASK, BR_DEREF, BR_PROC, IF_NOFALL, LOC_OP, LOC_POINTER, LOC_STRING,
-    LOC_UNI, L_LTYPE, REF_CODE, RTYPE_BASEOFF, RTYPE_BASERELOC,
+use crate::{
+    constants::{
+        ARCH_DEFAULT, ARCH_MASK, BR_DEREF, BR_PROC, IF_NOFALL, LOC_OP, LOC_POINTER, LOC_STRING,
+        LOC_UNI, L_LTYPE, REF_CODE, RTYPE_BASEOFF, RTYPE_BASERELOC,
+    },
+    emulator::OpCode,
+    workspace::VivWorkspace,
 };
-use crate::emulator::OpCode;
-use crate::workspace::VivWorkspace;
 use log::debug;
-use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+    rc::Rc,
+};
 
 pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
     let mut blocks = Vec::new();
