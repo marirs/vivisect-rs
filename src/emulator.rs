@@ -1,39 +1,38 @@
 #![allow(dead_code, unused)]
 
-
-use std::borrow::BorrowMut;
-use std::collections::HashMap;
-use std::rc::Rc;
 use crate::constants::{IF_CALL, IF_RET};
 use crate::memory::Memory;
 use crate::monitor::EmulationMonitor;
 use crate::workspace::VivWorkspace;
+use std::borrow::BorrowMut;
+use std::collections::HashMap;
+use std::rc::Rc;
 
 pub const INIT_STACK_SIZE: usize = 0x8000;
-pub const INIT_STACK_MAP: [u8; INIT_STACK_SIZE] = [0xfe; INIT_STACK_SIZE]; 
+pub const INIT_STACK_MAP: [u8; INIT_STACK_SIZE] = [0xfe; INIT_STACK_SIZE];
 
-pub trait Operand{
+pub trait Operand {
     /// If the given operand will dereference memory, this method must return True.
     fn is_deref(&self) -> bool {
         false
     }
-    
+
     /// If the given operand represents an immediate value, this must return True.
     fn is_immed(&self) -> bool {
         false
     }
-    
+
     ///  If the given operand represents a register value, this must return True.
     fn is_reg(&self) -> bool {
         false
     }
-    
+
     /// If the given operand can be completly resolved without an emulator, return True.
     fn is_discrete(&self) -> bool {
         false
     }
-    
-    fn repr(&self) -> String{
+
+    fn repr(&self) -> String {
         "Unknown".to_string()
     }
 
@@ -42,12 +41,12 @@ pub trait Operand{
     /// memory and registers.
     /// NOTE: This API may be passed a None emu and should return what it can
     /// (or None if it can't be resolved)
-    fn get_oper_value(&self, op: OpCode, emu: Option<GenericEmulator>) -> Option<i32>{
+    fn get_oper_value(&self, op: OpCode, emu: Option<GenericEmulator>) -> Option<i32> {
         panic!("Unimplemented.");
     }
 }
 
-pub struct DerefOper{}
+pub struct DerefOper {}
 
 impl Operand for DerefOper {
     fn is_deref(&self) -> bool {
@@ -55,7 +54,7 @@ impl Operand for DerefOper {
     }
 }
 
-pub struct ImmedOper{}
+pub struct ImmedOper {}
 
 impl Operand for ImmedOper {
     fn is_immed(&self) -> bool {
@@ -67,7 +66,7 @@ impl Operand for ImmedOper {
     }
 }
 
-pub struct RegisterOper{}
+pub struct RegisterOper {}
 
 impl Operand for RegisterOper {
     fn is_reg(&self) -> bool {
@@ -84,7 +83,7 @@ pub struct OpCode {
     pub opers: Vec<Rc<dyn Operand>>,
     pub repr: Option<String>,
     pub iflags: u32,
-    pub va: i32
+    pub va: i32,
 }
 
 impl OpCode {
@@ -99,7 +98,14 @@ impl OpCode {
     /// NOTE: If you want to create an architecture spcific opcode, I'd *highly* recommend you
     /// just copy/paste in the following simple initial code rather than calling the parent
     /// constructor.  The extra
-    pub fn new(va: i32, opcode: i32, mnem: &str, prefixes: i32, size: i32, operands: Vec<Rc<dyn Operand>>) -> Self {
+    pub fn new(
+        va: i32,
+        opcode: i32,
+        mnem: &str,
+        prefixes: i32,
+        size: i32,
+        operands: Vec<Rc<dyn Operand>>,
+    ) -> Self {
         OpCode {
             opcode,
             mnem: mnem.to_string(),
@@ -108,26 +114,26 @@ impl OpCode {
             opers: operands,
             repr: None,
             iflags: 0,
-            va
+            va,
         }
     }
-    
+
     pub fn is_call(&self) -> bool {
         self.iflags & IF_CALL == 1
     }
-    
+
     pub fn is_return(&self) -> bool {
         self.iflags & IF_RET == 1
     }
-    
-    pub fn get_branches(&self) -> Vec<(i32, i32)>{
+
+    pub fn get_branches(&self) -> Vec<(i32, i32)> {
         vec![]
     }
-    
+
     pub fn get_operands(&self) -> Option<String> {
         None
     }
-    
+
     pub fn len(&self) -> usize {
         self.size as usize
     }
@@ -137,49 +143,51 @@ pub trait WorkspaceEmulator {
     /// Setup and initialize stack memory.
     /// You may call this prior to emulating instructions.
     fn init_stack_memory(&mut self, stack_size: usize);
-    
+
     fn add_memory_map(&mut self, map_base: i32, size: i32, p0: &str, map: Vec<u8>);
-    
+
     fn set_stack_counter(&mut self, va: i32);
-    
+
     fn write_memory(&mut self, va: i32, taint_bytes: Vec<u8>);
-    
+
     fn get_stack_counter(&mut self) -> Option<i32>;
-    
+
     fn get_program_counter(&mut self) -> i32;
-    
+
     fn get_memory_snap(&self) -> Vec<(i32, i32, Vec<String>, i32)>;
 
-    fn set_memory_snap(&self, memory_snap: Vec<(i32, i32, Vec<String>, i32)> );
-    
+    fn set_memory_snap(&self, memory_snap: Vec<(i32, i32, Vec<String>, i32)>);
+
     fn set_emu_opt(&self, arch: &str, size: i32);
 }
 
-pub trait Emulator{
+pub trait Emulator {
     fn get_vivworkspace(&mut self) -> VivWorkspace;
-    
+
     fn get_func_va(&mut self) -> i32;
-    
+
     fn is_emu_stopped(&self) -> bool;
-    
+
     fn get_hooks(&mut self) -> Vec<String>;
-    
+
     fn get_stack_map_base(&mut self) -> &mut Option<i32>;
-    
+
     fn get_stack_map_mask(&mut self) -> &mut Option<i32>;
-    
+
     fn get_stack_map_top(&mut self) -> &mut Option<i32>;
-    
+
     fn get_stack_pointer(&mut self) -> &mut Option<i32>;
-    
 }
 
-impl<T> WorkspaceEmulator for T where T: Emulator {
+impl<T> WorkspaceEmulator for T
+where
+    T: Emulator,
+{
     fn init_stack_memory(&mut self, stack_size: usize) {
         if self.get_stack_map_base().as_ref().cloned().is_none() {
-            // *self.get_stack_map_mask().unwrap() = 
+            // *self.get_stack_map_mask().unwrap() =
             let mut stack_map = Vec::from(INIT_STACK_MAP);
-            if stack_size!= INIT_STACK_SIZE {
+            if stack_size != INIT_STACK_SIZE {
                 stack_map = vec![0xfe; stack_size];
             }
             // Map in a memory map for the stack.
@@ -187,17 +195,18 @@ impl<T> WorkspaceEmulator for T where T: Emulator {
             self.add_memory_map(map_base, 6, "[stack]", stack_map.clone());
             let stack_pointer = self.get_stack_pointer().unwrap();
             self.set_stack_counter(stack_pointer);
-        } else { 
-            let existing_map_size = self.get_stack_map_top().unwrap() - self.get_stack_map_base().unwrap();
+        } else {
+            let existing_map_size =
+                self.get_stack_map_top().unwrap() - self.get_stack_map_base().unwrap();
             let new_map_size = stack_size as i32 - existing_map_size;
-            if new_map_size < 0{
+            if new_map_size < 0 {
                 panic!("Cannot shrink stack.");
             }
             let new_map_top = self.get_stack_map_base().unwrap();
             let new_map_base = new_map_top - new_map_size;
             let mut stack_map = Vec::new();
             for i in 0..new_map_size {
-                stack_map.push(new_map_base as u8 + (i as u8 *4));
+                stack_map.push(new_map_base as u8 + (i as u8 * 4));
             }
             self.add_memory_map(new_map_base, 6, "[stack]", stack_map);
         }
@@ -214,7 +223,7 @@ impl<T> WorkspaceEmulator for T where T: Emulator {
     fn write_memory(&mut self, va: i32, taint_bytes: Vec<u8>) {
         todo!()
     }
-    
+
     fn get_stack_counter(&mut self) -> Option<i32> {
         todo!()
     }
@@ -227,15 +236,13 @@ impl<T> WorkspaceEmulator for T where T: Emulator {
         todo!()
     }
 
-    fn set_memory_snap(&self, memory_snap: Vec<(i32, i32, Vec<String>, i32)> ){
+    fn set_memory_snap(&self, memory_snap: Vec<(i32, i32, Vec<String>, i32)>) {
         todo!()
     }
 
     fn set_emu_opt(&self, arch: &str, size: i32) {
         todo!()
     }
-    
-    
 }
 
 #[derive(Clone, Debug)]
@@ -265,12 +272,12 @@ pub struct GenericEmulator {
     p_size: i32,
     safe_mem: bool,
     func_only: bool,
-    strict_ops: bool
+    strict_ops: bool,
 }
 
 impl GenericEmulator {
     pub fn new(workspace: VivWorkspace) -> Self {
-        let emulator = GenericEmulator{
+        let emulator = GenericEmulator {
             stack_map_base: None,
             stack_map_mask: None,
             stack_map_top: None,
@@ -296,16 +303,16 @@ impl GenericEmulator {
             p_size: 0,
             safe_mem: false,
             func_only: false,
-            strict_ops: false
+            strict_ops: false,
         };
         emulator
     }
-    pub fn read_memory_format(&self, va: i32, taint_bytes: &str) -> Vec<i32>{
+    pub fn read_memory_format(&self, va: i32, taint_bytes: &str) -> Vec<i32> {
         Vec::new()
     }
 }
 
-impl Emulator for GenericEmulator{
+impl Emulator for GenericEmulator {
     fn get_vivworkspace(&mut self) -> VivWorkspace {
         self.workspace.clone()
     }

@@ -1,16 +1,19 @@
 #![allow(dead_code, unused)]
 
+use crate::constants::{
+    ARCH_DEFAULT, ARCH_MASK, BR_DEREF, BR_PROC, IF_NOFALL, LOC_OP, LOC_POINTER, LOC_STRING,
+    LOC_UNI, L_LTYPE, REF_CODE, RTYPE_BASEOFF, RTYPE_BASERELOC,
+};
+use crate::emulator::OpCode;
+use crate::workspace::VivWorkspace;
+use log::debug;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
-use log::debug;
-use crate::constants::{ARCH_DEFAULT, ARCH_MASK, BR_DEREF, BR_PROC, IF_NOFALL, L_LTYPE, LOC_OP, LOC_POINTER, LOC_STRING, LOC_UNI, REF_CODE, RTYPE_BASEOFF, RTYPE_BASERELOC};
-use crate::emulator::OpCode;
-use crate::workspace::VivWorkspace;
 
 pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
     let mut blocks = Vec::new();
-    let mut done : HashMap<i32, bool> = HashMap::new();
+    let mut done: HashMap<i32, bool> = HashMap::new();
     let mut mnem: HashMap<String, i32> = HashMap::new();
     let mut todo = vec![funcva];
     let mut brefs = Vec::new();
@@ -39,7 +42,7 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
             let (lva, lsize, ltype, linfo) = loc.unwrap();
             if ltype == LOC_POINTER {
                 workspace.del_location(lva);
-                // pointer analysis mis-identified a pointer, 
+                // pointer analysis mis-identified a pointer,
                 // so clear and re-analyze instructions.
                 if op.is_some() {
                     arch = op.as_ref().cloned().unwrap().iflags & ARCH_MASK;
@@ -58,9 +61,9 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
                 brefs.push((va, false));
                 break;
             }
-            
+
             op = workspace.parse_op_code(va);
-            *mnem.get_mut(&op.as_ref().cloned().unwrap().mnem).unwrap() += 1; 
+            *mnem.get_mut(&op.as_ref().cloned().unwrap().mnem).unwrap() += 1;
             size += lsize;
             opcount += 1;
             let nextva = va + lsize;
@@ -69,29 +72,29 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
             let xrefs = workspace.get_xrefs_from(va, Some(REF_CODE));
             for (from_va, to_va, r_type, r_flags) in xrefs {
                 // We do not handle procedural branches here..
-                if r_flags & BR_PROC == 1{
+                if r_flags & BR_PROC == 1 {
                     continue;
                 }
                 // For now we'll skip jmp [import] thunks.
-                if r_flags & BR_DEREF  == 1{
+                if r_flags & BR_DEREF == 1 {
                     continue;
                 }
                 branch = true;
                 todo.push(to_va);
                 // If it doesn't fall through, terminate (at nextva)
-                if (linfo.clone().first().unwrap().0 as u32 & IF_NOFALL) == 1{
-                    *blocks.get_mut(start as  usize).unwrap() = nextva - start;
+                if (linfo.clone().first().unwrap().0 as u32 & IF_NOFALL) == 1 {
+                    *blocks.get_mut(start as usize).unwrap() = nextva - start;
                     brefs.push((nextva, false));
                     break;
                 }
                 // If we hit a branch, we are at the end of the block.
                 if branch {
-                    *blocks.get_mut(start as  usize).unwrap() = nextva - start;
+                    *blocks.get_mut(start as usize).unwrap() = nextva - start;
                     todo.push(nextva);
                     break;
                 }
                 if workspace.get_xrefs_to(nextva, Some(REF_CODE)).len() > 0 {
-                    *blocks.get_mut(start as  usize).unwrap() = nextva - start;
+                    *blocks.get_mut(start as usize).unwrap() = nextva - start;
                     todo.push(nextva);
                     break;
                 }
@@ -100,9 +103,9 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
         }
     }
     let funcs = workspace.get_function_blocks(funcva);
-    
-    let mut old_blocks = HashMap::new(); 
-    for (va, size, fva, _) in funcs.iter(){
+
+    let mut old_blocks = HashMap::new();
+    for (va, size, fva, _) in funcs.iter() {
         old_blocks.insert(va, size);
     }
     // We now have an ordered list of block references
@@ -127,13 +130,12 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
             workspace.del_code_block(bva);
             workspace.add_code_block(bva, bsize, funcva);
         }
-        bcnt +=1;
+        bcnt += 1;
     }
     workspace.set_function_meta(funcva, "Size", size);
     workspace.set_function_meta(funcva, "BlockCount", bcnt);
     workspace.set_function_meta(funcva, "InstructionCount", opcount);
     // workspace.set_function_meta(funcva, "MnemDist", mnem.get(0).unwrap());
-    
 }
 
 pub trait Analyzer {
@@ -142,28 +144,27 @@ pub trait Analyzer {
 
 impl Debug for dyn Analyzer + 'static {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Analyzer")
-            .finish()
+        f.debug_struct("Analyzer").finish()
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct AnalysisModTracker{
-    analyzers: Vec<Rc<dyn Analyzer>>
+pub struct AnalysisModTracker {
+    analyzers: Vec<Rc<dyn Analyzer>>,
 }
 
 impl AnalysisModTracker {
     pub fn new() -> Self {
         AnalysisModTracker {
-            analyzers: Vec::new()
+            analyzers: Vec::new(),
         }
     }
-    
+
     pub fn register_analyzer(&mut self, analyzer: Rc<dyn Analyzer>) {
         self.analyzers.push(analyzer);
     }
-    
-    pub fn start_analysis(&self, workspace: VivWorkspace) { 
+
+    pub fn start_analysis(&self, workspace: VivWorkspace) {
         for analyzer in self.analyzers.clone() {
             analyzer.analyze(workspace.clone());
         }
@@ -174,7 +175,7 @@ pub struct EntryPointsAnalyzer;
 
 impl EntryPointsAnalyzer {
     pub fn new() -> Self {
-        EntryPointsAnalyzer{}
+        EntryPointsAnalyzer {}
     }
 }
 
@@ -188,7 +189,7 @@ pub struct RelocationsAnalyzer;
 
 impl RelocationsAnalyzer {
     pub fn new() -> Self {
-        RelocationsAnalyzer{}
+        RelocationsAnalyzer {}
     }
 }
 
@@ -202,7 +203,7 @@ impl Analyzer for RelocationsAnalyzer {
                 workspace.make_pointer(va, None, true);
             } else if rtype == RTYPE_BASEOFF {
                 if !workspace.is_location(va) {
-                    workspace.make_pointer(va, None,true);
+                    workspace.make_pointer(va, None, true);
                 }
             }
         }
@@ -211,15 +212,18 @@ impl Analyzer for RelocationsAnalyzer {
 
 pub struct StringConstantAnalyzer;
 
-impl StringConstantAnalyzer{
-    pub fn new()-> Self{
-        StringConstantAnalyzer{}
+impl StringConstantAnalyzer {
+    pub fn new() -> Self {
+        StringConstantAnalyzer {}
     }
 }
 
 impl Analyzer for StringConstantAnalyzer {
     fn analyze(&self, mut workspace: VivWorkspace) {
-        debug!("Analyzing string constants, {:?}", workspace.get_functions());
+        debug!(
+            "Analyzing string constants, {:?}",
+            workspace.get_functions()
+        );
         for fva in workspace.get_functions() {
             for (mut va, size, func_va, _) in workspace.get_function_blocks(fva) {
                 let maxva = va + size;
@@ -227,7 +231,7 @@ impl Analyzer for StringConstantAnalyzer {
                     let op = workspace.parse_op_code(va);
                     if let Some(op) = op {
                         for o in op.opers.clone() {
-                            if o.is_deref(){
+                            if o.is_deref() {
                                 continue;
                             }
                             let reference = o.get_oper_value(op.clone(), None);
@@ -235,18 +239,32 @@ impl Analyzer for StringConstantAnalyzer {
                                 continue;
                             }
                             let loc = workspace.get_location(reference.as_ref().cloned().unwrap());
-                            if loc.is_some() && vec![LOC_UNI, LOC_STRING].contains(&loc.as_ref().cloned().unwrap().2) {
+                            if loc.is_some()
+                                && vec![LOC_UNI, LOC_STRING]
+                                    .contains(&loc.as_ref().cloned().unwrap().2)
+                            {
                                 continue;
                             }
-                            if !(!workspace.get_xrefs_to(reference.as_ref().cloned().unwrap(), None).is_empty() && !workspace.get_xrefs_from(reference.as_ref().cloned().unwrap(), None).is_empty()){
+                            if !(!workspace
+                                .get_xrefs_to(reference.as_ref().cloned().unwrap(), None)
+                                .is_empty()
+                                && !workspace
+                                    .get_xrefs_from(reference.as_ref().cloned().unwrap(), None)
+                                    .is_empty())
+                            {
                                 continue;
                             }
-                            if workspace.get_segment(reference.as_ref().cloned().unwrap()).is_none() {
+                            if workspace
+                                .get_segment(reference.as_ref().cloned().unwrap())
+                                .is_none()
+                            {
                                 continue;
                             }
-                            let mut sz = workspace.detect_unicode(reference.as_ref().cloned().unwrap());
+                            let mut sz =
+                                workspace.detect_unicode(reference.as_ref().cloned().unwrap());
                             if sz > 0 {
-                                workspace.make_unicode(reference.as_ref().cloned().unwrap(), Some(sz));
+                                workspace
+                                    .make_unicode(reference.as_ref().cloned().unwrap(), Some(sz));
                             } else {
                                 sz = workspace.detect_string(reference.as_ref().cloned().unwrap());
                                 if sz > 0 {

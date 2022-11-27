@@ -1,7 +1,7 @@
-use std::env::current_dir;
-use std::rc::Rc;
 use log::Level;
 use simple_logger::init_with_level;
+use std::env::current_dir;
+use std::rc::Rc;
 use vivisect::analysis::{EntryPointsAnalyzer, RelocationsAnalyzer};
 use vivisect::workspace::VivWorkspace;
 

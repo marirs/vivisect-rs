@@ -1,18 +1,17 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod workspace;
-pub mod constants;
-pub mod emulator;
-pub mod monitor;
 pub mod analysis;
+pub mod constants;
+pub mod context;
+pub mod emulator;
+pub mod ihex;
 pub mod memory;
-pub mod utils;
+pub mod monitor;
 pub mod page_lookup;
 pub mod parser;
-pub mod ihex;
+pub mod utils;
 pub mod vstruct;
-pub mod context;
-
+pub mod workspace;
 
 #[cfg(feature = "std")]
 extern crate core;
