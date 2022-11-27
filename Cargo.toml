@@ -13,6 +13,9 @@ plain = "0.2.3"
 scroll = { version="0.11.0", default_features=false }
 simple_logger = "4.0.0"
 
+[dev-dependencies]
+goblin = "0.6.0"
+
 [features]
 default = ["std", "elf32", "elf64", "mach32", "mach64", "pe32", "pe64", "archive", "endian_fd"]
 std = ["alloc", "scroll/std"]
