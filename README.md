@@ -8,7 +8,7 @@ A crate to perform static analysis. This is a port of the vivisect library writt
 
 ### Usage
 ```toml
-[dependancies]
+[dependencies]
 vivisect = { git = "https://github.com/marirs/vivisect-rs", branch = "master" }
 ```
 
