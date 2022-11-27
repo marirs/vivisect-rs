@@ -264,7 +264,7 @@ impl VivWorkspace {
     /// Get back the fref value (or None) for the given operand index
     /// from the instruction at va.
     pub fn get_fref(&mut self, va: i32, indx: i32) -> Option<String> {
-        self.frefs.get(&(va, indx)).map(|x| x.clone())
+        self.frefs.get(&(va, indx)).cloned()
     }
 
     /// Get an instance of a WorkspaceEmulator for this workspace.
@@ -361,9 +361,10 @@ impl VivWorkspace {
         }
         let (mmva, mmsz, mmperm, fname) = mmap.unwrap();
         let reloc: Option<i32> = self.get_relocation(va);
-        if reloc.is_none() {
-            return None;
-        }
+        // if reloc.is_none() {
+        //     return None;
+        // }
+        reloc?;
         let exp = reloc.as_ref().cloned();
         todo!();
         // self.fire_event(VWE_DELRELOC, (fname.to_string(), va, exp.clone(), full));
@@ -418,8 +419,8 @@ impl VivWorkspace {
         if self.get_xrefs_from(from_va, None).contains(&reference) {
             return;
         }
-        let mut xr_to = self.xrefs_by_to.get(&to_va).map(|x| x.clone());
-        let mut xr_from = self.xrefs_by_from.get(&from_va).map(|x| x.clone());
+        let mut xr_to = self.xrefs_by_to.get(&to_va).cloned();
+        let mut xr_from = self.xrefs_by_from.get(&from_va).cloned();
         if xr_to.is_none() {
             xr_to = Some(Vec::new());
             self.xrefs_by_to
@@ -431,9 +432,9 @@ impl VivWorkspace {
                 .insert(from_va, xr_from.as_ref().cloned().unwrap());
         }
         if !xr_to.as_ref().cloned().unwrap().contains(&reference) {
-            xr_to.unwrap().push(reference.clone());
-            xr_from.unwrap().push(reference.clone());
-            self.xrefs.push(reference.clone());
+            xr_to.unwrap().push(reference);
+            xr_from.unwrap().push(reference);
+            self.xrefs.push(reference);
         }
     }
 
@@ -491,8 +492,8 @@ impl VivWorkspace {
             return "NULL".to_string();
         }
         let loc = self.get_location(va);
-        if loc.is_some() {
-            let (loc_va, loc_sz, lt, lt_info) = loc.unwrap();
+        if let Some(loc_val) = loc {
+            let (loc_va, loc_sz, lt, lt_info) = loc_val;
             if vec![LOC_STRING, LOC_UNI].contains(&lt) {
                 return self.repr_va(loc_va);
             }
@@ -500,8 +501,8 @@ impl VivWorkspace {
         let (m_base, m_size, m_perm, m_file) = self.get_memory_map(va).unwrap();
         let mut ret = format!("{} {}", m_file, va - m_base);
         let sym: Option<String> = self.get_name(va, true);
-        if sym.is_some() {
-            ret = sym.unwrap();
+        if let Some(sym_val) = sym {
+            ret = sym_val;
         }
         ret
     }
@@ -565,17 +566,19 @@ impl VivWorkspace {
 
     pub fn get_va_set_row(&self, name: &str, va: i32) -> Option<Vec<i32>> {
         let vaset = self.vasets.get(name);
-        if vaset.is_none() {
-            return None;
-        }
+        // if vaset.is_none() {
+        //     return None;
+        // }
+        vaset?;
         Some(vaset.unwrap().clone().1)
     }
 
     pub fn get_va_set_rows(&self, name: &str) -> Option<Vec<i32>> {
         let x = self.vasets.get(name);
-        if x.is_none() {
-            return None;
-        }
+        // if x.is_none() {
+        //     return None;
+        // }
+        x?;
         x.map(|(defs, rows)| rows.clone())
     }
 
@@ -738,7 +741,7 @@ impl VivWorkspace {
                 .xrefs
                 .iter()
                 .filter(|x| x.2 == r_type)
-                .map(|x| *x)
+                .copied()
                 .collect::<Vec<_>>();
         }
         self.xrefs.clone()
@@ -748,7 +751,7 @@ impl VivWorkspace {
         // Vec::new()
         self.funcmeta
             .iter()
-            .map(|x| x.0.clone())
+            .map(|x| *x.0)
             .collect::<Vec<_>>()
     }
 
@@ -775,7 +778,7 @@ impl VivWorkspace {
                 .loclist
                 .iter()
                 .filter(|loc| loc.2 == ltype.as_ref().cloned().unwrap())
-                .map(|x| x.clone())
+                .cloned()
                 .collect::<Vec<_>>();
         }
         self.loclist
@@ -784,7 +787,7 @@ impl VivWorkspace {
                 loc.2 == ltype.as_ref().cloned().unwrap()
                     && loc.3 == linfo.as_ref().cloned().unwrap()
             })
-            .map(|x| x.clone())
+            .cloned()
             .collect::<Vec<_>>()
     }
 
@@ -795,7 +798,7 @@ impl VivWorkspace {
     pub fn snap_in_analysis_modules(&self) {}
 
     pub fn get_function_blocks(&mut self, func_va: i32) -> Vec<(i32, i32, i32, Vec<(i32, i32)>)> {
-        let mut ret = self.codeblocks_by_funcva.get(&func_va).map(|x| x.clone());
+        let mut ret = self.codeblocks_by_funcva.get(&func_va).cloned();
         if ret.is_none() {
             ret = Some(Vec::new());
         }
@@ -819,7 +822,7 @@ impl VivWorkspace {
             .unwrap()
             .iter()
             .filter(|x_tup| x_tup.2 == r_type.as_ref().cloned().unwrap())
-            .map(|x| *x)
+            .copied()
             .collect::<Vec<_>>()
     }
 
@@ -844,7 +847,7 @@ impl VivWorkspace {
             .unwrap()
             .iter()
             .filter(|x_tup| x_tup.2 == r_type.as_ref().cloned().unwrap())
-            .map(|x| *x)
+            .copied()
             .collect::<Vec<_>>()
     }
 
@@ -914,7 +917,7 @@ impl VivWorkspace {
         let key = (
             va,
             arch,
-            b[..16].iter().copied().collect::<Vec<_>>(),
+            b[..16].to_vec(),
         );
         let valu = *self._op_cache.get(&key).unwrap();
         self._op_cache.insert(key, valu);
