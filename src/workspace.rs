@@ -1,27 +1,25 @@
-#![allow(dead_code, unused)]
+#![allow(dead_code, unused, clippy::type_complexity)]
 
-use crate::analysis::{analyze_function, AnalysisModTracker, Analyzer};
-use crate::constants::{
-    ARCH_DEFAULT, CB_FUNCVA, ENDIAN_LSB, LOC_IMPORT, LOC_NUMBER, LOC_OP, LOC_POINTER, LOC_STRING,
-    LOC_UNI, LOC_VFTABLE, L_LTYPE, L_SIZE, L_TINFO, L_VA, MM_EXEC, MM_READ, MM_WRITE, REBASE_TYPES,
-    REF_PTR, SEG_FNAME, VASET_ADDRESS, VASET_COMPLEX, VASET_INTEGER, VASET_STRING, VTE_MASK,
-    VWE_ADDFREF, VWE_ADDMMAP, VWE_ADDRELOC, VWE_ADDVASET, VWE_AUTOANALFIN, VWE_COMMENT,
-    VWE_DELRELOC, VWE_SETVASETROW, XR_RTYPE,
+use crate::{
+    analysis::{analyze_function, AnalysisModTracker, Analyzer},
+    constants::{
+        ARCH_DEFAULT, CB_FUNCVA, ENDIAN_LSB, LOC_IMPORT, LOC_NUMBER, LOC_OP, LOC_POINTER,
+        LOC_STRING, LOC_UNI, LOC_VFTABLE, L_LTYPE, L_SIZE, L_TINFO, L_VA, MM_EXEC, MM_READ,
+        MM_WRITE, REBASE_TYPES, REF_PTR, SEG_FNAME, VASET_ADDRESS, VASET_COMPLEX, VASET_INTEGER,
+        VASET_STRING, VTE_MASK, VWE_ADDFREF, VWE_ADDMMAP, VWE_ADDRELOC, VWE_ADDVASET,
+        VWE_AUTOANALFIN, VWE_COMMENT, VWE_DELRELOC, VWE_SETVASETROW, XR_RTYPE,
+    },
+    context::VivCodeFlowContext,
+    emulator::{Emulator, GenericEmulator, ImmedOper, OpCode, RegisterOper},
+    memory::Memory,
+    page_lookup::MapLookUp,
+    parser::parse_file,
+    utils::{align, guess_format_filename},
+    Object,
 };
-use crate::context::VivCodeFlowContext;
-use crate::emulator::{Emulator, GenericEmulator, ImmedOper, OpCode, RegisterOper};
-use crate::memory::Memory;
-use crate::page_lookup::MapLookUp;
-use crate::parser::parse_file;
-use crate::utils::{align, guess_format_filename};
-use crate::Object;
 use chrono::Local;
 use log::{debug, error, info, warn};
-use std::collections::HashMap;
-use std::fmt::format;
-use std::fs;
-use std::path::Path;
-use std::rc::Rc;
+use std::{collections::HashMap, fmt::format, fs, path::Path, rc::Rc};
 
 /// VivWorkspace is the heart of vivisect_rs's binary analysis. Most APIs accept a VivWorkspace
 /// as their first parameter, and the workspace is responsible for all the user facing functions
@@ -749,10 +747,7 @@ impl VivWorkspace {
 
     pub fn get_functions(&mut self) -> Vec<i32> {
         // Vec::new()
-        self.funcmeta
-            .iter()
-            .map(|x| *x.0)
-            .collect::<Vec<_>>()
+        self.funcmeta.iter().map(|x| *x.0).collect::<Vec<_>>()
     }
 
     pub fn get_function_meta_dict(&self, va: i32) -> HashMap<String, i32> {
@@ -914,11 +909,7 @@ impl VivWorkspace {
                 // arch = loct_up_unwrapped.3;
             }
         }
-        let key = (
-            va,
-            arch,
-            b[..16].to_vec(),
-        );
+        let key = (va, arch, b[..16].to_vec());
         let valu = *self._op_cache.get(&key).unwrap();
         self._op_cache.insert(key, valu);
         // FIXME Return a properly formed opcode
@@ -1466,10 +1457,10 @@ impl Memory for VivWorkspace {
                     let mut new_bytes = Vec::new();
                     new_bytes.append(
                         &mut m_bytes[offset as usize..].to_vec(),
-                            // .iter()
-                            // .copied()
-                            // // .map(|x| *x)
-                            // .collect::<Vec<_>>(),
+                        // .iter()
+                        // .copied()
+                        // // .map(|x| *x)
+                        // .collect::<Vec<_>>(),
                     );
                     new_bytes.append(
                         &mut self
@@ -1509,43 +1500,43 @@ impl Memory for VivWorkspace {
                     let mut new_bytes = Vec::new();
                     new_bytes.append(
                         &mut mbytes[..offset as usize].to_vec(),
-                            // .iter()
-                            // .copied()
-                            // // .map(|x| *x)
-                            // .collect::<Vec<_>>(),
+                        // .iter()
+                        // .copied()
+                        // // .map(|x| *x)
+                        // .collect::<Vec<_>>(),
                     );
                     new_bytes.append(
                         &mut bytes[..max_write_len as usize].to_vec(),
-                            // .iter()
-                            // .copied()
-                            // // .map(|x| *x)
-                            // .collect::<Vec<_>>(),
+                        // .iter()
+                        // .copied()
+                        // // .map(|x| *x)
+                        // .collect::<Vec<_>>(),
                     );
                     mapdef.3 = new_bytes;
                     self.write_memory(
                         mva + msize,
                         bytes[max_write_len as usize..].to_vec(),
-                            // .iter()
-                            // .copied()
-                            // // .map(|x| *x)
-                            // .collect::<Vec<_>>(),
+                        // .iter()
+                        // .copied()
+                        // // .map(|x| *x)
+                        // .collect::<Vec<_>>(),
                     );
                 } else {
                     let mut new_bytes = Vec::new();
                     new_bytes.append(
                         &mut mbytes[..offset as usize].to_vec(),
-                            // .iter()
-                            // .copied()
-                            // // .map(|x| *x)
-                            // .collect::<Vec<_>>(),
+                        // .iter()
+                        // .copied()
+                        // // .map(|x| *x)
+                        // .collect::<Vec<_>>(),
                     );
                     new_bytes.append(&mut bytes.clone());
                     new_bytes.append(
                         &mut mbytes[(offset + bytes_len) as usize..].to_vec(),
-                            // .iter()
-                            // .copied()
-                            // // .map(|x| *x)
-                            // .collect::<Vec<_>>(),
+                        // .iter()
+                        // .copied()
+                        // // .map(|x| *x)
+                        // .collect::<Vec<_>>(),
                     );
                     mapdef.3 = new_bytes;
                 }
