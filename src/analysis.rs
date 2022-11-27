@@ -205,10 +205,8 @@ impl Analyzer for RelocationsAnalyzer {
             let va = imgbase + vaoff;
             if rtype == RTYPE_BASERELOC && !workspace.is_location(va) {
                 workspace.make_pointer(va, None, true);
-            } else if rtype == RTYPE_BASEOFF {
-                if !workspace.is_location(va) {
-                    workspace.make_pointer(va, None, true);
-                }
+            } else if rtype == RTYPE_BASEOFF && !workspace.is_location(va) {
+                workspace.make_pointer(va, None, true);
             }
         }
     }
