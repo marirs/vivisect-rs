@@ -97,8 +97,8 @@ pub fn find_offset(
                 section.virtual_address,
                 section.virtual_address + section.virtual_size
             );
-            if is_in_section(rva, &section, file_alignment) {
-                let offset = rva2offset(rva, &section);
+            if is_in_section(rva, section, file_alignment) {
+                let offset = rva2offset(rva, section);
                 debug!(
                     "Found in section {}({}), remapped into offset {:#x}",
                     section.name().unwrap_or(""),

@@ -2,7 +2,7 @@
 name = "vivisect"
 description = "A cross-platform, ELF, Mach-o, and PE binary parsing and loading crate."
 authors = ["Marirs <marirs@gmail.com>"]
-version = "0.1.3"
+version = "0.1.4"
 keywords = ["vivisect", "disassembler", "cfg", "capstone"]
 categories = ["parsing", "development-tools::debugging"]
 readme = "README.md"

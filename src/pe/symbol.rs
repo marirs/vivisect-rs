@@ -1,5 +1,4 @@
-use crate::error;
-use crate::strtab;
+use crate::{error, strtab};
 use alloc::vec::Vec;
 use core::fmt::{self, Debug};
 use scroll::{ctx, IOread, IOwrite, Pread, Pwrite, SizeWith};
@@ -164,7 +163,7 @@ pub const IMAGE_SYM_CLASS_CLR_TOKEN: u8 = 107;
 ///
 /// [`ExceptionData::get_unwind_info`]: struct.ExceptionData.html#method.get_unwind_info
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
 pub struct Symbol {
     /// The name of the symbol.
     ///
@@ -296,7 +295,7 @@ impl Symbol {
 
 /// Auxiliary symbol record for function definitions.
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
 pub struct AuxFunctionDefinition {
     /// The symbol-table index of the corresponding `.bf` (begin function) symbol record.
     pub tag_index: u32,
@@ -318,7 +317,7 @@ pub struct AuxFunctionDefinition {
 
 /// Auxiliary symbol record for symbols with storage class `IMAGE_SYM_CLASS_FUNCTION`.
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
 pub struct AuxBeginAndEndFunction {
     /// Unused padding.
     pub unused1: [u8; 4],
@@ -347,7 +346,7 @@ pub const IMAGE_WEAK_EXTERN_SEARCH_ALIAS: u32 = 3;
 
 /// Auxiliary symbol record for weak external symbols.
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
 pub struct AuxWeakExternal {
     /// The symbol-table index of the symbol to be linked if an external definition is not found.
     pub tag_index: u32,
@@ -387,7 +386,7 @@ pub const IMAGE_COMDAT_SELECT_LARGEST: u8 = 6;
 
 /// Auxiliary symbol record for section definitions.
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Pread, Pwrite, IOread, IOwrite, SizeWith)]
 pub struct AuxSectionDefinition {
     /// The size of section data; the same as `size_of_raw_data` in the section header.
     pub length: u32,
