@@ -320,9 +320,10 @@ impl From<Header> for Header64 {
 
 impl Header {
     pub fn new(ctx: container::Ctx) -> Self {
-        let mut header = Header::default();
-        header.magic = if ctx.is_big() { MH_MAGIC_64 } else { MH_MAGIC };
-        header
+        // let mut header = Header::default();
+        // header.magic = if ctx.is_big() { MH_MAGIC_64 } else { MH_MAGIC };
+        // header
+        Header { magic: if ctx.is_big() { MH_MAGIC_64 } else { MH_MAGIC }, ..Default::default() }
     }
     /// Returns the cpu type
     pub fn cputype(&self) -> CpuType {
