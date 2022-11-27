@@ -57,11 +57,12 @@ impl<'a> Strtab<'a> {
             Some(get_str(offset, self.bytes, self.delim).unwrap())
         }
     }
-    #[cfg(feature = "alloc")]
+
     /// Parses a `Strtab` from `bytes` at `offset` with `len` size as the backing string table, using `delim` as the delimiter.
     ///
     /// Errors if bytes are invalid UTF-8.
     /// Requires `feature = "alloc"`
+    #[cfg(feature = "alloc")]
     pub fn parse(bytes: &'a [u8], offset: usize, len: usize, delim: u8) -> error::Result<Self> {
         let (end, overflow) = offset.overflowing_add(len);
         if overflow || end > bytes.len() {
@@ -82,14 +83,15 @@ impl<'a> Strtab<'a> {
         }
         Ok(result)
     }
-    #[cfg(feature = "alloc")]
+
     /// Parses a `Strtab` with `bytes` as the backing string table, using `delim` as the delimiter between entries.
     ///
     /// Requires `feature = "alloc"`
+    #[cfg(feature = "alloc")]
     pub fn new_preparsed(bytes: &'a [u8], delim: u8) -> error::Result<Self> {
         Self::parse(bytes, 0, bytes.len(), delim)
     }
-    #[cfg(feature = "alloc")]
+
     /// Converts the string table to a vector of parsed strings.
     ///
     /// Note: This method is used to check the parsed contents of `strtab`.
@@ -111,6 +113,7 @@ impl<'a> Strtab<'a> {
     /// ```
     ///
     /// Requires `feature = "alloc"`
+    #[cfg(feature = "alloc")]
     pub fn to_vec(&self) -> error::Result<Vec<&'a str>> {
         // Fallback in case `Strtab` was created using `from_slice_unparsed()`.
         if self.strings.is_empty() {
@@ -125,11 +128,12 @@ impl<'a> Strtab<'a> {
         }
         Ok(self.strings.iter().map(|&(_key, value)| value).collect())
     }
-    #[cfg(feature = "alloc")]
+
     /// Safely gets a str reference from the parsed table starting at byte `offset`.
     ///
     /// If the index is out of bounds, `None` is returned.
     /// Requires `feature = "alloc"`
+    #[cfg(feature = "alloc")]
     pub fn get_at(&self, offset: usize) -> Option<&'a str> {
         match self
             .strings
@@ -145,20 +149,22 @@ impl<'a> Strtab<'a> {
             }
         }
     }
-    #[deprecated(since = "0.4.2", note = "Use from_slice_unparsed() instead")]
+
     /// Construct a strtab from a `ptr`, and a `size`, using `delim` as the delimiter
     ///
     /// # Safety
     /// This function creates a `Strtab` directly from a raw pointer and size
+    #[deprecated(since = "0.4.2", note = "Use from_slice_unparsed() instead")]
     pub unsafe fn from_raw(ptr: *const u8, len: usize, delim: u8) -> Strtab<'a> {
         Self::from_slice_unparsed(core::slice::from_raw_parts(ptr, len), 0, len, delim)
     }
-    #[deprecated(since = "0.4.2", note = "Bad performance, use get_at() instead")]
-    #[cfg(feature = "alloc")]
+
     /// Parses a str reference from the parsed table starting at byte `offset`.
     ///
     /// If the index is out of bounds, `None` is returned.
     /// Requires `feature = "alloc"`
+    #[deprecated(since = "0.4.2", note = "Bad performance, use get_at() instead")]
+    #[cfg(feature = "alloc")]
     pub fn get(&self, offset: usize) -> Option<error::Result<&'a str>> {
         if offset >= self.bytes.len() {
             None
