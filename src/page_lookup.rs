@@ -8,6 +8,12 @@ pub struct MapLookUp {
     maps_list: Vec<(i32, i32, Vec<Option<(i32, i32, i32, Vec<(i32, i32)>)>>)>,
 }
 
+impl Default for MapLookUp {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MapLookUp {
     pub fn new() -> Self {
         MapLookUp {

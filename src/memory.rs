@@ -66,9 +66,10 @@ pub trait Memory {
     /// Read a number from memory of the given size.
     fn read_mem_value(&mut self, addr: i32, size: i32) -> Option<i32> {
         let bytes = self.read_memory(addr, size);
-        if bytes.is_none() {
-            return None;
-        }
+        // if bytes.is_none() {
+        //     return None;
+        // }
+        bytes.as_ref()?;
         if bytes.as_ref().cloned().unwrap().len() != size as usize {
             warn!(
                 "Read gave wrong length a va: {:0x} (Wanted {} got {})",

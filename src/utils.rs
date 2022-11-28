@@ -26,11 +26,11 @@ pub fn slow_parse_bytes(
 
 pub fn align(orig_size: usize, alignment: usize) -> usize {
     let remainder = orig_size % alignment;
-    return if remainder == 0 {
+    if remainder == 0 {
         orig_size
     } else {
         orig_size + (alignment - remainder)
-    };
+    }
 }
 
 pub fn guess_format_filename(filename: &str) -> String {

@@ -8,6 +8,12 @@ pub struct EmulationMonitor {
     return_values: Vec<String>,
 }
 
+impl Default for EmulationMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmulationMonitor {
     pub fn new() -> Self {
         EmulationMonitor {

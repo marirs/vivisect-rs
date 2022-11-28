@@ -20,6 +20,12 @@ pub struct IHexChunk {
     vs_fields: Vec<i32>,
 }
 
+impl Default for IHexChunk {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IHexChunk {
     pub fn new() -> Self {
         IHexChunk {
@@ -59,6 +65,12 @@ pub struct IHexFile {
     meta: Vec<(String, IHexChunk)>,
 }
 
+impl Default for IHexFile {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IHexFile {
     pub fn new() -> Self {
         IHexFile { meta: Vec::new() }
@@ -68,7 +80,7 @@ impl IHexFile {
         let mut lines = bytes[offset as usize..].split_inclusive(|x| char::from(*x) == '\n');
         for line in lines {
             offset += 1;
-            if line.len() == 0 {
+            if line.is_empty() {
                 continue;
             }
             let c = IHexChunk::new();

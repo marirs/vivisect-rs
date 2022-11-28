@@ -1,12 +1,7 @@
 #![allow(dead_code, unused)]
 
-use crate::constants::{IF_CALL, IF_RET};
-use crate::memory::Memory;
-use crate::monitor::EmulationMonitor;
-use crate::workspace::VivWorkspace;
-use std::borrow::BorrowMut;
-use std::collections::HashMap;
-use std::rc::Rc;
+use crate::{constants::{IF_CALL, IF_RET}, memory::Memory, monitor::EmulationMonitor, workspace::VivWorkspace};
+use std::{borrow::BorrowMut, rc::Rc, collections::HashMap};
 
 pub const INIT_STACK_SIZE: usize = 0x8000;
 pub const INIT_STACK_MAP: [u8; INIT_STACK_SIZE] = [0xfe; INIT_STACK_SIZE];
@@ -192,7 +187,7 @@ where
             }
             // Map in a memory map for the stack.
             let map_base = self.get_stack_map_base().unwrap();
-            self.add_memory_map(map_base, 6, "[stack]", stack_map.clone());
+            self.add_memory_map(map_base, 6, "[stack]", stack_map);
             let stack_pointer = self.get_stack_pointer().unwrap();
             self.set_stack_counter(stack_pointer);
         } else {
@@ -277,7 +272,7 @@ pub struct GenericEmulator {
 
 impl GenericEmulator {
     pub fn new(workspace: VivWorkspace) -> Self {
-        let emulator = GenericEmulator {
+        GenericEmulator {
             stack_map_base: None,
             stack_map_mask: None,
             stack_map_top: None,
@@ -304,8 +299,7 @@ impl GenericEmulator {
             safe_mem: false,
             func_only: false,
             strict_ops: false,
-        };
-        emulator
+        }
     }
     pub fn read_memory_format(&self, va: i32, taint_bytes: &str) -> Vec<i32> {
         Vec::new()

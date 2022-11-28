@@ -183,6 +183,12 @@ impl Default for AnalysisModTracker {
 
 pub struct EntryPointsAnalyzer;
 
+impl Default for EntryPointsAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EntryPointsAnalyzer {
     pub fn new() -> Self {
         EntryPointsAnalyzer {}
@@ -196,6 +202,12 @@ impl Analyzer for EntryPointsAnalyzer {
 }
 
 pub struct RelocationsAnalyzer;
+
+impl Default for RelocationsAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl RelocationsAnalyzer {
     pub fn new() -> Self {
@@ -219,6 +231,12 @@ impl Analyzer for RelocationsAnalyzer {
 }
 
 pub struct StringConstantAnalyzer;
+
+impl Default for StringConstantAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl StringConstantAnalyzer {
     pub fn new() -> Self {
