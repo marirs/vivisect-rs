@@ -23,10 +23,10 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
     let mut brefs = Vec::new();
     let mut size = 0;
     let mut opcount = 0;
-    while todo.len() > 0 {
+    while !todo.is_empty() {
         let start = todo.pop().unwrap();
         // If we hit code we've already done, proceed.
-        if done.get(&start).unwrap().clone() {
+        if *done.get(&start).unwrap() {
             continue;
         }
         *done.get_mut(&start).unwrap() = true;
@@ -97,7 +97,7 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
                     todo.push(nextva);
                     break;
                 }
-                if workspace.get_xrefs_to(nextva, Some(REF_CODE)).len() > 0 {
+                if !workspace.get_xrefs_to(nextva, Some(REF_CODE)).is_empty() {
                     *blocks.get_mut(start as usize).unwrap() = nextva - start;
                     todo.push(nextva);
                     break;
@@ -116,12 +116,12 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
     brefs.sort();
     brefs.reverse();
     let mut bcnt = 0;
-    while brefs.len() > 0 {
+    while !brefs.is_empty() {
         let (bva, is_begin) = brefs.pop().unwrap();
         if !is_begin {
             continue;
         }
-        if brefs.len() == 0 {
+        if brefs.is_empty() {
             break;
         }
         // So we don't add a code block if we're reanalyzing a function. (like dynamic branch analysis).
@@ -172,6 +172,12 @@ impl AnalysisModTracker {
         for analyzer in self.analyzers.clone() {
             analyzer.analyze(workspace.clone());
         }
+    }
+}
+
+impl Default for AnalysisModTracker {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

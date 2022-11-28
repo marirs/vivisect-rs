@@ -173,7 +173,7 @@ if_sylvan! {
                 None
             } else {
                 Some(note::NoteIterator {
-                    iters: iters,
+                    iters,
                     index: 0,
                 })
             }
@@ -210,7 +210,7 @@ if_sylvan! {
                 None
             } else {
                 Some(note::NoteIterator {
-                    iters: iters,
+                    iters,
                     index: 0,
                 })
             }
@@ -402,7 +402,7 @@ if_sylvan! {
                 is_lib: misc.is_lib,
                 entry: misc.entry,
                 little_endian: misc.little_endian,
-                ctx: ctx,
+                ctx,
                 versym,
                 verdef,
                 verneed,

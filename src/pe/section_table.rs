@@ -128,7 +128,8 @@ impl SectionTable {
             self.name[0] = b'/';
             self.name[1..][..len].copy_from_slice(&name[7 - len..]);
             Ok(())
-        } else if idx as u64 <= 0xfff_fff_fff {
+        // } else if idx as u64 <= 0xfff_fff_fff {
+        } else if idx as u64 <= 0x000f_ffff_ffff {
             // 64^6 - 1
             self.name[0] = b'/';
             self.name[1] = b'/';

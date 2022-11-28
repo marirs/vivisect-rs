@@ -1,3 +1,5 @@
+#![allow(clippy::unused_unit)]
+
 use crate::error;
 use scroll::{IOread, IOwrite, Pread, Pwrite, SizeWith};
 
