@@ -1,4 +1,5 @@
 //! Load commands tell the kernel and dynamic linker anything from how to load this binary into memory, what the entry point is, apple specific information, to which libraries it requires for dynamic linking
+#![allow(clippy::unused_unit)]
 
 use crate::error;
 use core::convert::TryFrom;

@@ -1,11 +1,12 @@
 #![allow(dead_code, unused)]
 
-use crate::constants::{MM_EXEC, MM_READ, MM_SHARED, MM_WRITE};
-use crate::emulator::GenericEmulator;
-use crate::utils::parse_bytes;
+use crate::{
+    constants::{MM_EXEC, MM_READ, MM_SHARED, MM_WRITE},
+    emulator::GenericEmulator,
+    utils::parse_bytes,
+};
 use log::{debug, info, warn};
-use std::cmp::min;
-use std::collections::HashMap;
+use std::{cmp::min, collections::HashMap};
 
 pub trait Memory {
     /// Returns the Endianness setting
@@ -158,8 +159,8 @@ pub trait MemoryCache {
     fn get_dirty_pages(&self) -> Vec<(i32, bool)> {
         self.get_page_dirty()
             .iter()
-            .filter(|&x| x.1.clone())
-            .map(|x| (x.0.clone(), x.1.clone()))
+            .filter(|&x| *x.1)
+            .map(|x| (*x.0, *x.1))
             .collect::<Vec<_>>()
     }
 }
@@ -190,7 +191,7 @@ where
             let page_va = va & self.get_page_mask();
             let page_off = va - page_va;
             let chunk_size = min(self.get_page_size() - page_off, size);
-            let mut page = self.get_page_cache().get(&page_va).map(|x| x.clone());
+            let mut page = self.get_page_cache().get(&page_va).cloned();
             if page.is_none() {
                 page = self.get_mem().read_memory(page_va, self.get_page_size());
                 self.get_page_cache()
@@ -199,9 +200,10 @@ where
             ret.append(
                 &mut page.as_ref().cloned().unwrap()
                     [page_off as usize..(page_off + chunk_size) as usize]
-                    .iter()
-                    .map(|x| x.clone())
-                    .collect::<Vec<_>>(),
+                    .to_vec(),
+                // .iter()
+                // .copied
+                // .collect::<Vec<_>>(),
             );
             va += chunk_size;
             size -= chunk_size;
@@ -210,11 +212,11 @@ where
     }
 
     fn write_memory(&mut self, mut va: i32, mut bytes: Vec<u8>) {
-        while bytes.len() > 0 {
+        while !bytes.is_empty() {
             let page_va = va & self.get_page_mask();
             let page_off = va - page_va;
             let chunk_size = min(self.get_page_size(), bytes.len() as i32);
-            let mut page = self.get_page_cache().get(&page_va).map(|x| x.clone());
+            let mut page = self.get_page_cache().get(&page_va).cloned();
             if page.is_none() {
                 page = self.get_mem().read_memory(page_va, self.get_page_size());
                 self.get_page_cache()
@@ -222,31 +224,31 @@ where
             }
             let mut new_bytes = Vec::new();
             new_bytes.append(
-                &mut page.as_ref().cloned().unwrap()[..page_off as usize]
-                    .iter()
-                    .map(|x| x.clone())
-                    .collect::<Vec<_>>(),
+                &mut page.as_ref().cloned().unwrap()[..page_off as usize].to_vec(),
+                // .iter()
+                // .copied()
+                // .collect::<Vec<_>>(),
             );
             new_bytes.append(
-                &mut bytes[..chunk_size as usize]
-                    .iter()
-                    .map(|x| x.clone())
-                    .collect::<Vec<_>>(),
+                &mut bytes[..chunk_size as usize].to_vec(),
+                // .iter()
+                // .copied()
+                // .collect::<Vec<_>>(),
             );
             new_bytes.append(
-                &mut page.unwrap()[(page_off + chunk_size) as usize..]
-                    .iter()
-                    .map(|x| x.clone())
-                    .collect::<Vec<_>>(),
+                &mut page.unwrap()[(page_off + chunk_size) as usize..].to_vec(),
+                // .iter()
+                // .copied()
+                // .collect::<Vec<_>>(),
             );
             *self.get_page_dirty().get_mut(&page_va).unwrap() = true;
             page = Some(new_bytes);
             self.get_page_cache().insert(page_va, page.unwrap());
             va += chunk_size;
-            bytes = bytes[chunk_size as usize..]
-                .iter()
-                .map(|x| x.clone())
-                .collect::<Vec<_>>();
+            bytes = bytes[chunk_size as usize..].to_vec();
+            // .iter()
+            // .copied()
+            // .collect::<Vec<_>>();
         }
     }
 

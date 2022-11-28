@@ -168,7 +168,7 @@ macro_rules! elf_rela_std_impl {
                     let r_info = r_info(rela.r_sym as $size, $size::from(rela.r_type));
                     Rela {
                         r_offset: rela.r_offset as $size,
-                        r_info: r_info,
+                        r_info,
                         r_addend: rela.r_addend.unwrap_or(0) as $isize,
                     }
                 }
@@ -179,7 +179,7 @@ macro_rules! elf_rela_std_impl {
                     let r_info = r_info(rel.r_sym as $size, $size::from(rel.r_type));
                     Rel {
                         r_offset: rel.r_offset as $size,
-                        r_info: r_info,
+                        r_info,
                     }
                 }
             }
@@ -418,7 +418,7 @@ if_alloc! {
             let bytes = bytes.pread_with(offset, filesz)?;
 
             Ok(RelocSection {
-                bytes: bytes,
+                bytes,
                 count: filesz / Reloc::size(is_rela, ctx),
                 ctx: (is_rela, ctx),
                 start: offset,

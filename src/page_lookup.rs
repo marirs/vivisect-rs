@@ -1,4 +1,5 @@
-#![allow(dead_code, unused)]
+#![allow(dead_code, unused, clippy::type_complexity)]
+
 use log::debug;
 use std::collections::HashMap;
 
@@ -82,9 +83,16 @@ impl PageLookup {
 
     pub fn get_page_lookup(&self, va: i32) -> Option<i32> {
         let page = self.page_dict.get(&(va >> 16));
-        if page.is_none() {
-            return None;
-        }
-        page.unwrap().get((va & 0xffff) as usize).map(|x| *x)
+        // if page.is_none() {
+        //     return None;
+        // }
+        page?;
+        page.unwrap().get((va & 0xffff) as usize).copied()
+    }
+}
+
+impl Default for PageLookup {
+    fn default() -> Self {
+        Self::new()
     }
 }

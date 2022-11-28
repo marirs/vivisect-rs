@@ -1,4 +1,5 @@
 // Defined note types for GNU systems.
+#![allow(clippy::unused_unit)]
 
 #[cfg(feature = "log")]
 use log::debug;

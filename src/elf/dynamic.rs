@@ -440,7 +440,7 @@ if_alloc! {
                     for dynamic in &dyns {
                         info.update(phdrs, dynamic);
                     }
-                    return Ok(Some(Dynamic { dyns: dyns, info: info, }));
+                    return Ok(Some(Dynamic { dyns, info, }));
                 }
             }
             Ok(None)

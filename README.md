@@ -14,7 +14,7 @@ A crate to perform static analysis. This is a port of the vivisect library writt
 ### Usage
 ```toml
 [dependencies]
-vivisect = "0.1.7"
+vivisect = "0.1.8"
 ```
 
 OR

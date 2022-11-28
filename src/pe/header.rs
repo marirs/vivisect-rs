@@ -1,6 +1,10 @@
-use crate::error;
-use crate::pe::{optional_header, section_table, symbol};
-use crate::strtab;
+#![allow(clippy::unused_unit)]
+
+use crate::{
+    error,
+    pe::{optional_header, section_table, symbol},
+    strtab,
+};
 use alloc::vec::Vec;
 use log::debug;
 use scroll::{IOread, IOwrite, Pread, Pwrite, SizeWith};

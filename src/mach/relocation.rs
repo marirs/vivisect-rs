@@ -11,6 +11,7 @@
 // also an offset but from the start of the "section" for which the relocation
 // entry is for.  See comments in <mach-o/loader.h> about the r_address feild
 // in images for used with the dynamic linker.
+#![allow(clippy::unused_unit)]
 
 // In 4.3BSD a.out objects if r_extern is zero then r_symbolnum is an ordinal
 // for the segment the symbol being relocated is in.  These ordinals are the

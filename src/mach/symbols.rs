@@ -1,6 +1,7 @@
 //! "Nlist" style symbols in this binary - beware, like most symbol tables in most binary formats, they are strippable, and should not be relied upon, see the imports and exports modules for something more permanent.
 //!
 //! Symbols are essentially a type, offset, and the symbol name
+#![allow(clippy::unused_unit)]
 
 use crate::container::{self, Container};
 use crate::error;
