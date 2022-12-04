@@ -12,12 +12,12 @@ homepage = "https://github.com/marirs/vivisect-rs"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.23"
 lazy_static = "1.4.0"
-log = { version="0.4.17", default_features=false, optional=true }
+log = {version="0.4.17", default_features=false, optional=true}
+chrono = "0.4.23"
+simple_logger = "4"
 plain = "0.2.3"
-scroll = { version="0.11.0", default_features=false }
-simple_logger = "3"
+scroll = {version="0.11.0", default_features=false}
 
 [dev-dependencies]
 goblin = "0.6.0"
