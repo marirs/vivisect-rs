@@ -2,7 +2,7 @@
 name = "vivisect"
 description = "A cross-platform, ELF, Mach-o, and PE binary parsing and loading crate."
 authors = ["Marirs <marirs@gmail.com>"]
-version = "0.1.10"
+version = "0.1.11"
 keywords = ["vivisect", "disassembler", "cfg", "capstone"]
 categories = ["parsing", "development-tools::debugging"]
 readme = "README.md"
@@ -12,12 +12,12 @@ homepage = "https://github.com/marirs/vivisect-rs"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.22"
+chrono = "0.4.23"
 lazy_static = "1.4.0"
 log = { version="0.4.17", default_features=false, optional=true }
 plain = "0.2.3"
 scroll = { version="0.11.0", default_features=false }
-simple_logger = "2.3.0"
+simple_logger = "3"
 
 [dev-dependencies]
 goblin = "0.6.0"
