@@ -17,7 +17,7 @@ lazy_static = "1.4.0"
 log = { version="0.4.17", default_features=false, optional=true }
 plain = "0.2.3"
 scroll = { version="0.11.0", default_features=false }
-simple_logger = "4.0.0"
+simple_logger = "2.3.0"
 
 [dev-dependencies]
 goblin = "0.6.0"
