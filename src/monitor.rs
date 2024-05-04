@@ -1,5 +1,7 @@
 #![allow(dead_code, unused)]
 
+use crate::emulator::OpCode;
+
 ///  Emulation monitors may be passed into functions like
 ///  runFunction() to track and hook the emulator.
 #[derive(Clone, Debug)]
@@ -28,5 +30,9 @@ impl EmulationMonitor {
 
     pub fn get_anomalies(&mut self) -> Vec<(i32, String)> {
         self.emulation_anomalies.clone()
+    }
+    
+    pub fn api_call(&mut self, op_code: OpCode, ) {
+        
     }
 }
