@@ -28,7 +28,7 @@ pub fn parse_file(mut workspace: VivWorkspace, filename: &str, _base_addr: Optio
                 "Adding function from IHEX metadata: {:#0x}",
                 eva.as_ref().cloned().unwrap()
             );
-            workspace.add_entry_point(eva.as_ref().cloned().unwrap() as i32);
+            workspace.add_entry_point(eva.as_ref().cloned().unwrap());
         }
     }
     let memory_maps = ihex.get_memory_maps();

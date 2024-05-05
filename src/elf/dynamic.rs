@@ -451,7 +451,7 @@ if_alloc! {
             let count = self.info.needed_count.min(self.dyns.len());
             let mut needed = Vec::with_capacity(count);
             for dynamic in &self.dyns {
-                if dynamic.d_tag as u64 == DT_NEEDED {
+                if dynamic.d_tag == DT_NEEDED {
                     if let Some(lib) = strtab.get_at(dynamic.d_val as usize) {
                         needed.push(lib)
                     } else {

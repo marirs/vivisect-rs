@@ -848,33 +848,33 @@ mod test {
         let local = Versym {
             vs_val: VER_NDX_LOCAL,
         };
-        assert_eq!(true, local.is_local());
-        assert_eq!(false, local.is_global());
-        assert_eq!(false, local.is_hidden());
+        assert!(local.is_local());
+        assert!(!local.is_global());
+        assert!(!local.is_hidden());
         assert_eq!(VER_NDX_LOCAL, local.version());
 
         let global = Versym {
             vs_val: VER_NDX_GLOBAL,
         };
-        assert_eq!(false, global.is_local());
-        assert_eq!(true, global.is_global());
-        assert_eq!(false, global.is_hidden());
+        assert!(!global.is_local());
+        assert!(global.is_global());
+        assert!(!global.is_hidden());
         assert_eq!(VER_NDX_GLOBAL, global.version());
 
         let hidden = Versym {
             vs_val: VERSYM_HIDDEN,
         };
-        assert_eq!(false, hidden.is_local());
-        assert_eq!(false, hidden.is_global());
-        assert_eq!(true, hidden.is_hidden());
+        assert!(!hidden.is_local());
+        assert!(!hidden.is_global());
+        assert!(hidden.is_hidden());
         assert_eq!(0, hidden.version());
 
         let hidden = Versym {
             vs_val: VERSYM_HIDDEN | 0x123,
         };
-        assert_eq!(false, hidden.is_local());
-        assert_eq!(false, hidden.is_global());
-        assert_eq!(true, hidden.is_hidden());
+        assert!(!hidden.is_local());
+        assert!(!hidden.is_global());
+        assert!(hidden.is_hidden());
         assert_eq!(0x123, hidden.version());
     }
 }

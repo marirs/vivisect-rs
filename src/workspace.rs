@@ -492,7 +492,7 @@ impl VivWorkspace {
         let loc = self.get_location(va);
         if let Some(loc_val) = loc {
             let (loc_va, loc_sz, lt, lt_info) = loc_val;
-            if vec![LOC_STRING, LOC_UNI].contains(&lt) {
+            if [LOC_STRING, LOC_UNI].contains(&lt) {
                 return self.repr_va(loc_va);
             }
         }
@@ -1041,7 +1041,7 @@ impl VivWorkspace {
         //     return None;
         // }
         loc.as_ref()?;
-        return if vec![LOC_STRING, LOC_UNI].contains(&loc.as_ref().cloned().unwrap().2) {
+        return if [LOC_STRING, LOC_UNI].contains(&loc.as_ref().cloned().unwrap().2) {
             if loc.as_ref().cloned().unwrap().3.is_empty() {
                 return loc;
             }
@@ -1301,7 +1301,7 @@ impl VivWorkspace {
         if ploc.is_some() {
             let mut modified = false;
             let (p_va, p_size, p_type, mut p_info) = ploc.as_ref().cloned().unwrap();
-            if !vec![LOC_STRING, LOC_UNI].contains(&p_type) {
+            if ![LOC_STRING, LOC_UNI].contains(&p_type) {
                 return (va, size, subs);
             }
             if !p_info.contains(&(va, size)) {
@@ -1583,7 +1583,7 @@ impl Memory for VivWorkspace {
         }
         let msize = bytes.len() as i32;
         let mmap = (map_va, msize, perms, fname.to_string());
-        let hlpr = (map_va, map_va + msize as i32, mmap, bytes);
+        let hlpr = (map_va, map_va + msize, mmap, bytes);
         self._map_defs.push(hlpr);
         // self.locmap.init_map_lookup(map_va, msize, None);
         msize

@@ -30,19 +30,6 @@ pub fn hash(symbol: &str) -> u32 {
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::hash;
-    #[test]
-    fn test_hash() {
-        assert_eq!(hash(""), 0x0000_1505);
-        assert_eq!(hash("printf"), 0x156b_2bb8);
-        assert_eq!(hash("exit"), 0x7c96_7e3f);
-        assert_eq!(hash("syscall"), 0xbac2_12a0);
-        assert_eq!(hash("flapenguin.me"), 0x8ae9_f18e);
-    }
-}
-
 macro_rules! elf_gnu_hash_impl {
     ($IntTy:ty) => {
         use crate::elf::sym::Sym;
@@ -217,4 +204,17 @@ macro_rules! elf_gnu_hash_impl {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::hash;
+    #[test]
+    fn test_hash() {
+        assert_eq!(hash(""), 0x0000_1505);
+        assert_eq!(hash("printf"), 0x156b_2bb8);
+        assert_eq!(hash("exit"), 0x7c96_7e3f);
+        assert_eq!(hash("syscall"), 0xbac2_12a0);
+        assert_eq!(hash("flapenguin.me"), 0x8ae9_f18e);
+    }
 }

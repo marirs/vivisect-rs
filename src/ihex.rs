@@ -118,7 +118,7 @@ impl IHexFile {
         for (fname, chunk) in self.meta.clone() {
             let c_type = chunk.record_type;
             if c_type == IHEX_REC_DATA {
-                let addr = chunk.get_address() + base_addr as i32;
+                let addr = chunk.get_address() + base_addr;
                 mem_parts.push((addr, chunk.get_data().to_vec()));
                 continue;
             }

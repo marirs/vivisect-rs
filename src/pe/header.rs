@@ -158,8 +158,7 @@ impl CoffHeader {
         let string_table_offset = self.pointer_to_symbol_table as usize
             + symbol::SymbolTable::size(self.number_of_symbol_table as usize);
         for i in 0..nsections {
-            let section =
-                section_table::SectionTable::parse(bytes, offset, string_table_offset as usize)?;
+            let section = section_table::SectionTable::parse(bytes, offset, string_table_offset)?;
             debug!("({}) {:#?}", i, section);
             sections.push(section);
         }
@@ -275,7 +274,7 @@ mod tests {
 
     #[test]
     fn crss_header() {
-        let header = Header::parse(&&CRSS_HEADER[..]).unwrap();
+        let header = Header::parse(&CRSS_HEADER[..]).unwrap();
         assert!(header.dos_header.signature == DOS_MAGIC);
         assert!(header.signature == PE_MAGIC);
         assert!(header.coff_header.machine == COFF_MACHINE_X86);

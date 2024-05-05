@@ -246,12 +246,7 @@ fn parse_utf8() {
         })) => true,
         _ => false,
     });
-    assert!(
-        match Strtab::new_preparsed(&[0xC6, 0x92, 0x6F, 0x6F], b'\n') {
-            Ok(_) => true,
-            _ => false,
-        }
-    );
+    assert!(Strtab::new_preparsed(&[0xC6, 0x92, 0x6F, 0x6F], b'\n').is_ok());
 }
 
 #[test]

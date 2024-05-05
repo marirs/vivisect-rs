@@ -1,3 +1,4 @@
+#![allow(hidden_glob_reexports)]
 //! # Relocation computations
 //!
 //! The following notation is used to describe relocation computations
