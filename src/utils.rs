@@ -1,5 +1,7 @@
 #![allow(dead_code, unused)]
 
+use std::path::Path;
+
 pub fn parse_bytes(
     bytes: Option<Vec<u8>>,
     offset: i32,

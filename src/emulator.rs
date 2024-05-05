@@ -2,6 +2,7 @@
 
 use crate::{constants::{IF_CALL, IF_RET}, memory::Memory, monitor::EmulationMonitor, workspace::VivWorkspace};
 use std::{borrow::BorrowMut, rc::Rc, collections::HashMap};
+use crate::envi::CallingConvention;
 
 pub const INIT_STACK_SIZE: usize = 0x8000;
 pub const INIT_STACK_MAP: [u8; INIT_STACK_SIZE] = [0xfe; INIT_STACK_SIZE];
@@ -114,11 +115,11 @@ impl OpCode {
     }
 
     pub fn is_call(&self) -> bool {
-        self.iflags & IF_CALL == 1
+        (self.iflags & IF_CALL) != 0
     }
 
     pub fn is_return(&self) -> bool {
-        self.iflags & IF_RET == 1
+        (self.iflags & IF_RET) != 0
     }
 
     pub fn get_branches(&self) -> Vec<(i32, i32)> {
@@ -134,10 +135,172 @@ impl OpCode {
     }
 }
 
+
+pub struct WorkspaceEmulatorData {
+    pub stack_map_base: Option<i32>,
+    pub stack_map_mask: Option<i32>,
+    pub stack_map_top: Option<i32>,
+    pub stack_pointer: Option<i32>,
+    pub workspace: Option<VivWorkspace>,
+    pub func_va: Option<i32>,
+    pub emustop: bool,
+    pub hooks: HashMap<i32, Box<dyn Fn()>>,
+    pub taints: HashMap<i32, i32>,
+    pub taint_va: Vec<i32>,
+    pub taint_offset: i32,
+    pub taint_mask: u64,
+    pub taint_byte: u8,
+    pub taint_repr: HashMap<i32, i32>,
+    pub uninit_use: HashMap<i32, i32>,
+    pub log_write: bool,
+    pub log_read: bool,
+    pub path: String,
+    pub cur_path: String,
+    pub op: Option<i32>,
+    pub emu_mon: Option<EmulationMonitor>,
+    pub p_size: i32,
+    pub safe_mem: bool,
+    pub func_only: bool,
+    pub strict_ops: bool,
+}
+
+impl Default for WorkspaceEmulatorData {
+    fn default() -> Self {
+        let base = 0x4156000F;
+        let path = "".to_string();
+        WorkspaceEmulatorData {
+            stack_map_base: None,
+            stack_map_mask: None,
+            stack_map_top: None,
+            stack_pointer: None,
+            workspace: None,
+            func_va: None,
+            emustop: false,
+            hooks: Default::default(),
+            taints: Default::default(),
+            taint_va: [0x4156000F; 0x2000].to_vec(),
+            taint_offset: 0x1000,
+            taint_mask: 0xffffe000,
+            taint_byte: 0xa,
+            taint_repr: Default::default(),
+            uninit_use: Default::default(),
+            log_write: false,
+            log_read: false,
+            path: path.clone(),
+            cur_path: path.clone(),
+            op: None,
+            emu_mon: None,
+            p_size: 0,
+            safe_mem: false,
+            func_only: false,
+            strict_ops: false,
+        }
+    }
+}
+
 pub trait WorkspaceEmulator {
     /// Setup and initialize stack memory.
     /// You may call this prior to emulating instructions.
-    fn init_stack_memory(&mut self, stack_size: usize);
+    fn init_stack_memory(&mut self, stack_size: usize) {
+        if self.get_data().stack_map_base.as_ref().cloned().is_none() {
+            // *self.get_stack_map_mask().unwrap() =
+            let mut stack_map = Vec::from(INIT_STACK_MAP);
+            if stack_size != INIT_STACK_SIZE {
+                stack_map = vec![0xfe; stack_size];
+            }
+            // Map in a memory map for the stack.
+            let map_base = self.get_data().stack_map_base.unwrap();
+            self.add_memory_map(map_base, 6, "[stack]", stack_map);
+            let stack_pointer = self.get_data().stack_pointer.unwrap();
+            self.set_stack_counter(stack_pointer);
+        } else {
+            let existing_map_size =
+                self.get_data().stack_map_top.unwrap() - self.get_data().stack_map_base.unwrap();
+            let new_map_size = stack_size as i32 - existing_map_size;
+            if new_map_size < 0 {
+                panic!("Cannot shrink stack.");
+            }
+            let new_map_top = self.get_data().stack_map_base.unwrap();
+            let new_map_base = new_map_top - new_map_size;
+            let mut stack_map = Vec::new();
+            for i in 0..new_map_size {
+                stack_map.push(new_map_base as u8 + (i as u8 * 4));
+            }
+            self.add_memory_map(new_map_base, 6, "[stack]", stack_map);
+        }
+    }
+
+    fn get_data(&mut self) -> &mut WorkspaceEmulatorData;
+    
+    fn get_data_ref(&self) -> &WorkspaceEmulatorData;
+
+    /// This is called by monitor to stop emulation
+    fn stop_emu(&mut self) {
+        self.get_data().emustop = true;
+    }
+
+    /// Retrieve a named value from th ecurrent code path context
+    fn get_path_prop<T>(&self, prop: T) -> String where T: Into<String>;
+
+    /// Set a named value which is only relevant for the current code path.
+    fn set_path_prop<T>(&self, key: T,  value: T) -> Option<String> where T: Into<String>;
+
+    /// Snap in an emulation monitor. (see EmulationMonitor doc from vivisect.monitor)
+    fn set_emulation_monitor(&self, monitor: EmulationMonitor) {
+        unimplemented!()
+    }
+
+    fn parse_opcode(&mut self, va: i32, arch: Option<i32>) -> Option<OpCode> {
+        //self.get_data().workspace.as_ref().unwrap().parse_op_code(va)
+        unimplemented!()
+    }
+    
+    fn set_program_counter(&self, va: i32) {
+        unimplemented!()
+    }
+    
+    fn get_call_api(&self, va: i32) -> (String, String, String, i32, Vec<String>) {
+        unimplemented!()
+    }
+    
+    fn get_calling_convention(&self, name: String) -> Option<Box<dyn CallingConvention>> {
+        unimplemented!()
+    }
+
+    /// Check if this was a call, and if so, do the required
+    /// import emulation and such...
+    fn check_call(&self, starteip: i32, endeip: i32, op: OpCode) -> bool {
+        let is_call = (op.iflags & IF_CALL) != 0;
+        if is_call {
+            if self.get_data_ref().func_only{
+                self.set_program_counter(starteip + op.len() as i32);
+            }
+            let api = self.get_call_api(endeip);
+            let (r_type, r_name, conv_name, call_name, func_args) = api.clone();
+            let call_conv = self.get_calling_convention(conv_name);
+            if call_conv.as_ref().is_none() {
+                return is_call;
+            }
+            // let argv = call_conv.unwrap().get_call_args(self, func_args.len());
+            // let mut ret = None;
+            // if self.get_data().emu_mon.as_ref().is_some() {
+            //     match self.get_data().emu_mon.as_ref().unwrap().api_call(op, endeip, api, argv) {
+            //         Ok(t) => {
+            //             ret = t;
+            //         },
+            //         Err(_) => {
+            //             self.get_data().emu_mon.as_ref().unwrap().log_anomaly(endeip, format!("API call failed: {}", call_name));
+            //         }
+            //     }
+            // }
+            // let hook = self.get_data().hooks.get(&call_name);
+            // if ret.as_ref().is_none() && hook.as_ref().is_some() {
+            //     let hook = hook.unwrap();
+            //     hook();
+            // }
+        }
+        is_call
+    }
 
     fn add_memory_map(&mut self, map_base: i32, size: i32, p0: &str, map: Vec<u8>);
 
@@ -174,71 +337,6 @@ pub trait Emulator {
     fn get_stack_pointer(&mut self) -> &mut Option<i32>;
 }
 
-impl<T> WorkspaceEmulator for T
-where
-    T: Emulator,
-{
-    fn init_stack_memory(&mut self, stack_size: usize) {
-        if self.get_stack_map_base().as_ref().cloned().is_none() {
-            // *self.get_stack_map_mask().unwrap() =
-            let mut stack_map = Vec::from(INIT_STACK_MAP);
-            if stack_size != INIT_STACK_SIZE {
-                stack_map = vec![0xfe; stack_size];
-            }
-            // Map in a memory map for the stack.
-            let map_base = self.get_stack_map_base().unwrap();
-            self.add_memory_map(map_base, 6, "[stack]", stack_map);
-            let stack_pointer = self.get_stack_pointer().unwrap();
-            self.set_stack_counter(stack_pointer);
-        } else {
-            let existing_map_size =
-                self.get_stack_map_top().unwrap() - self.get_stack_map_base().unwrap();
-            let new_map_size = stack_size as i32 - existing_map_size;
-            if new_map_size < 0 {
-                panic!("Cannot shrink stack.");
-            }
-            let new_map_top = self.get_stack_map_base().unwrap();
-            let new_map_base = new_map_top - new_map_size;
-            let mut stack_map = Vec::new();
-            for i in 0..new_map_size {
-                stack_map.push(new_map_base as u8 + (i as u8 * 4));
-            }
-            self.add_memory_map(new_map_base, 6, "[stack]", stack_map);
-        }
-    }
-
-    fn add_memory_map(&mut self, map_base: i32, size: i32, p0: &str, map: Vec<u8>) {
-        todo!()
-    }
-
-    fn set_stack_counter(&mut self, va: i32) {
-        todo!()
-    }
-
-    fn write_memory(&mut self, va: i32, taint_bytes: Vec<u8>) {
-        todo!()
-    }
-
-    fn get_stack_counter(&mut self) -> Option<i32> {
-        todo!()
-    }
-
-    fn get_program_counter(&mut self) -> i32 {
-        todo!()
-    }
-
-    fn get_memory_snap(&self) -> Vec<(i32, i32, Vec<String>, i32)> {
-        todo!()
-    }
-
-    fn set_memory_snap(&self, memory_snap: Vec<(i32, i32, Vec<String>, i32)>) {
-        todo!()
-    }
-
-    fn set_emu_opt(&self, arch: &str, size: i32) {
-        todo!()
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct GenericEmulator {

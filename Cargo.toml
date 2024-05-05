@@ -18,6 +18,7 @@ chrono = "0.4.23"
 simple_logger = "4"
 plain = "0.2.3"
 scroll = {version="0.11.0", default_features=false}
+capstone = "0.12.0"
 
 [dev-dependencies]
 goblin = "0.6.0"
