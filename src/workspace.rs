@@ -279,7 +279,7 @@ impl VivWorkspace {
     /// Example:
     /// vw.set_comment(callva, "This actually calls FOO...")
     pub fn set_comment(&mut self, va: i32, comment: &str, check: bool) {
-        if check && self.comments.get(&va).is_some() {
+        if check && self.comments.contains_key(&va) {
             return;
         }
         todo!();
@@ -1122,7 +1122,7 @@ impl VivWorkspace {
     }
 
     pub fn is_function(&self, func_va: i32) -> bool {
-        self.funcmeta.get(&func_va).is_some()
+        self.funcmeta.contains_key(&func_va)
     }
 
     /// Returns the name of the specified virtual address (or None).
@@ -1243,7 +1243,7 @@ impl VivWorkspace {
     /// Return the VA for this function.  This will search code blocks
     /// and check for a function va.
     pub fn get_function(&self, va: i32) -> Option<i32> {
-        if self.funcmeta.get(&va).is_some() {
+        if self.funcmeta.contains_key(&va) {
             return Some(va);
         }
         let cbtup = self.get_code_block(va);

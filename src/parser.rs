@@ -17,7 +17,7 @@ pub fn parse_file(mut workspace: VivWorkspace, filename: &str, _base_addr: Optio
     let contents = fs::read(filename).expect("Error reading the file.");
     let mut cursor = Cursor::new(contents);
     let mut shdr = Vec::with_capacity(offset);
-    cursor.read(&mut shdr).unwrap();
+    cursor.read_exact(&mut shdr).unwrap();
     let mut sbytes = Vec::new();
     cursor.read_to_end(&mut sbytes).unwrap();
     let fname: String = workspace.add_file(filename, 0, sbytes.clone());

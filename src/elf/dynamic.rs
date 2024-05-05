@@ -117,9 +117,9 @@ pub const DT_HIPROC: u64 = 0x7fff_ffff;
 pub const DT_ADDRRNGLO: u64 = 0x6fff_fe00;
 /// GNU-style hash table
 pub const DT_GNU_HASH: u64 = 0x6fff_fef5;
-///
+/// TLDESC PLT
 pub const DT_TLSDESC_PLT: u64 = 0x6fff_fef6;
-///
+/// TLDESC GOT
 pub const DT_TLSDESC_GOT: u64 = 0x6fff_fef7;
 /// Start of conflict section
 pub const DT_GNU_CONFLICT: u64 = 0x6fff_fef8;
@@ -137,7 +137,7 @@ pub const DT_PLTPAD: u64 = 0x6fff_fefd;
 pub const DT_MOVETAB: u64 = 0x6fff_fefe;
 /// Syminfo table
 pub const DT_SYMINFO: u64 = 0x6fff_feff;
-///
+/// SYMINFO
 pub const DT_ADDRRNGHI: u64 = 0x6fff_feff;
 
 //DT_ADDRTAGIDX(tag)	(DT_ADDRRNGHI - (tag))	/* Reverse order! */
