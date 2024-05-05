@@ -9,7 +9,7 @@ A crate to perform static analysis. This is a port of the vivisect library writt
 [See the original project.](https://github.com/vivisect/vivisect)
 
 ### Requirements
-- Rust 1.60+ (2021 edition)
+- Rust 1.70+ (2021 edition)
 
 ### Usage
 ```toml
