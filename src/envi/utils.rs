@@ -1,9 +1,9 @@
-use std::rc::Rc;
-use lazy_static::lazy_static;
 use crate::envi::constants::{ARCH_NAMES, ARCH_NAMES_REV};
 use crate::envi::ArchitectureModule;
-use crate::error::Error::InvalidState;
 use crate::envi::Result;
+use crate::error::Error::InvalidState;
+use lazy_static::lazy_static;
+use std::rc::Rc;
 
 // """
 // A file full of bit twidling helpers
@@ -373,70 +373,126 @@ use crate::envi::Result;
 
 pub const MAX_WORD: i32 = 32;
 
-lazy_static!(
+lazy_static! {
     static ref U_MAXES: Vec<i32> = {
-        let mut u_maxes: Vec<i32> = (0..MAX_WORD+1)
-        .map(|i| (2i32.pow(8*i as u32) - 1))
-        .collect();
+        let mut u_maxes: Vec<i32> = (0..MAX_WORD + 1)
+            .map(|i| (2i32.pow(8 * i as u32) - 1))
+            .collect();
         u_maxes[0] = 0;
         u_maxes
     };
-    static ref BU_MAXES: Vec<i32> = (0..8*MAX_WORD+1).map(|i| 2i32.pow(i as u32) - 1).collect();
-    static ref SIGN_BITS: Vec<i32> = {
-        let mut sign_bits: Vec<i32> = (0..MAX_WORD+1)
-        .map(|i| 2i32.pow(8*i as u32) >> 1)
+    static ref BU_MAXES: Vec<i32> = (0..8 * MAX_WORD + 1)
+        .map(|i| 2i32.pow(i as u32) - 1)
         .collect();
+    static ref SIGN_BITS: Vec<i32> = {
+        let mut sign_bits: Vec<i32> = (0..MAX_WORD + 1)
+            .map(|i| 2i32.pow(8 * i as u32) >> 1)
+            .collect();
         sign_bits[0] = 0;
         sign_bits
     };
-    static ref B_SIGN_BITS: Vec<i32> = (0..8*MAX_WORD+1).map(|i| 2i32.pow(i as u32) >> 1).collect();
-    static ref S_MAXES: Vec<i32> = {
-        let mut s_maxes: Vec<i32> = (0..MAX_WORD+1)
-        .map(|i| U_MAXES[i as usize] ^ SIGN_BITS[i as usize])
+    static ref B_SIGN_BITS: Vec<i32> = (0..8 * MAX_WORD + 1)
+        .map(|i| 2i32.pow(i as u32) >> 1)
         .collect();
+    static ref S_MAXES: Vec<i32> = {
+        let mut s_maxes: Vec<i32> = (0..MAX_WORD + 1)
+            .map(|i| U_MAXES[i as usize] ^ SIGN_BITS[i as usize])
+            .collect();
         s_maxes[0] = 0;
         s_maxes
     };
     static ref B_MASKS: Vec<i32> = {
-        let mut b_masks: Vec<i32> = (0..MAX_WORD*8)
-        .map(|i| 2i32.pow(i as u32) - 1)
-        .collect();
+        let mut b_masks: Vec<i32> = (0..MAX_WORD * 8).map(|i| 2i32.pow(i as u32) - 1).collect();
         b_masks[0] = 0;
         b_masks
     };
-    
     static ref PARITY_TABLE: Vec<bool> = (0..256).map(|i| is_parity(i)).collect();
-    
     static ref LE_FMT_CHARS: Vec<Option<&'static str>> = vec![
-        None, Some("B"), Some("<H"), None, Some("<I"), None, None, None, Some("<Q")
+        None,
+        Some("B"),
+        Some("<H"),
+        None,
+        Some("<I"),
+        None,
+        None,
+        None,
+        Some("<Q")
     ];
     static ref BE_FMT_CHARS: Vec<Option<&'static str>> = vec![
-        None, Some("B"), Some(">H"), None, Some(">I"), None, None, None, Some(">Q")
+        None,
+        Some("B"),
+        Some(">H"),
+        None,
+        Some(">I"),
+        None,
+        None,
+        None,
+        Some(">Q")
     ];
-    static ref FMT_CHARS: Vec<Vec<Option<&'static str>>> = vec![LE_FMT_CHARS.clone(), BE_FMT_CHARS.clone()];
-    
+    static ref FMT_CHARS: Vec<Vec<Option<&'static str>>> =
+        vec![LE_FMT_CHARS.clone(), BE_FMT_CHARS.clone()];
     static ref LE_FMT_SCHARS: Vec<Option<&'static str>> = vec![
-        None, Some("b"), Some("<h"), None, Some("<i"), None, None, None, Some("<q")
+        None,
+        Some("b"),
+        Some("<h"),
+        None,
+        Some("<i"),
+        None,
+        None,
+        None,
+        Some("<q")
     ];
-	    static ref BE_FMT_SCHARS: Vec<Option<&'static str>> = vec![
-        None, Some("b"), Some(">h"), None, Some(">i"), None, None, None, Some(">q")
+    static ref BE_FMT_SCHARS: Vec<Option<&'static str>> = vec![
+        None,
+        Some("b"),
+        Some(">h"),
+        None,
+        Some(">i"),
+        None,
+        None,
+        None,
+        Some(">q")
     ];
-    static ref FMT_SCHARS: Vec<Vec<Option<&'static str>>> = vec![LE_FMT_SCHARS.clone(), BE_FMT_SCHARS.clone()];
-    
-    static ref MASTER_FMTS: Vec<Vec<Vec<Option<&'static str>>>> = vec![FMT_CHARS.clone(), FMT_SCHARS.clone()];
-    
+    static ref FMT_SCHARS: Vec<Vec<Option<&'static str>>> =
+        vec![LE_FMT_SCHARS.clone(), BE_FMT_SCHARS.clone()];
+    static ref MASTER_FMTS: Vec<Vec<Vec<Option<&'static str>>>> =
+        vec![FMT_CHARS.clone(), FMT_SCHARS.clone()];
     static ref FMT_SIZES: Vec<Option<i32>> = vec![
-        None, Some(1), Some(2), Some(4), Some(4), Some(8), Some(8), Some(8), Some(8)
+        None,
+        Some(1),
+        Some(2),
+        Some(4),
+        Some(4),
+        Some(8),
+        Some(8),
+        Some(8),
+        Some(8)
     ];
-    
     static ref LE_FMT_FLOAT: Vec<Option<&'static str>> = vec![
-        None, None, None, None, Some("<f"), None, None, None, Some("<d")
+        None,
+        None,
+        None,
+        None,
+        Some("<f"),
+        None,
+        None,
+        None,
+        Some("<d")
     ];
     static ref BE_FMT_FLOAT: Vec<Option<&'static str>> = vec![
-        None, None, None, None, Some(">f"), None, None, None, Some(">d")
+        None,
+        None,
+        None,
+        None,
+        Some(">f"),
+        None,
+        None,
+        None,
+        Some(">d")
     ];
-    static ref FMT_FLOATS: Vec<Vec<Option<&'static str>>> = vec![LE_FMT_FLOAT.clone(), BE_FMT_FLOAT.clone()];
-);
+    static ref FMT_FLOATS: Vec<Vec<Option<&'static str>>> =
+        vec![LE_FMT_FLOAT.clone(), BE_FMT_FLOAT.clone()];
+};
 
 pub fn signed(value: i32, size: i32) -> i32 {
     let x = unsigned(value, size);
@@ -469,7 +525,7 @@ pub fn sign_extend(value: i32, cursize: i32, newsize: i32) -> i32 {
     if cursize != newsize && x & SIGN_BITS[cursize as usize] != 0 {
         let delta = newsize - cursize;
         let highbits = U_MAXES[delta as usize];
-        x |= highbits << (8*cursize);
+        x |= highbits << (8 * cursize);
     }
     x
 }
@@ -538,12 +594,11 @@ pub fn get_arch_by_id(arch_id: i32) -> Option<&'static str> {
     ARCH_NAMES.get(&arch_id).cloned()
 }
 
-
 pub fn get_current_arch() -> Option<&'static str> {
     None
 }
 
-pub fn get_arch_modules(arch: Option<i32>) ->  Vec<Rc<dyn ArchitectureModule>>{
+pub fn get_arch_modules(arch: Option<i32>) -> Vec<Rc<dyn ArchitectureModule>> {
     vec![]
 }
 
@@ -566,7 +621,9 @@ pub fn mem_diff(mem1: Vec<u8>, mem2: Vec<u8>) -> Result<Vec<(i32, i32)>> {
     }
     let size = mem1.len();
     if size != mem2.len() {
-        return Err(InvalidState("mem_diff *requires* same size bytes.".to_string()));
+        return Err(InvalidState(
+            "mem_diff *requires* same size bytes.".to_string(),
+        ));
     }
     let mut diffs = Vec::new();
     let mut offset = 0;
@@ -595,14 +652,20 @@ pub fn parse_bits(bytes: Vec<u8>, offset: i32, bit_off: i32, bit_size: i32) -> u
         let mod_off = add_bit % 8;
 
         let o = bytes[add_off as usize];
-        val = (val << 1 ) + ((o >> (7 - mod_off)) & 1);
+        val = (val << 1) + ((o >> (7 - mod_off)) & 1);
         cnt += 1;
     }
     val
 }
 
 /// Mostly for pulling immediates out of strings...
-pub fn parse_bytes(bytes: Vec<i32>, offset: i32, size: i32, sign: Option<bool>, bigend: Option<bool>) -> Vec<i32> {
+pub fn parse_bytes(
+    bytes: Vec<i32>,
+    offset: i32,
+    size: i32,
+    sign: Option<bool>,
+    bigend: Option<bool>,
+) -> Vec<i32> {
     let sign = sign.unwrap_or_default();
     let bigend = bigend.unwrap_or_default();
     if size > 8 {
@@ -620,7 +683,10 @@ pub fn parse_bytes(bytes: Vec<i32>, offset: i32, size: i32, sign: Option<bool>, 
     let x = match f.unwrap() {
         "B" => vec![d[0]],
         "H" => d.chunks(2).map(|c| c[0] | (c[1] << 8)).collect(),
-        "I" => d.chunks(4).map(|c| c[0] | (c[1] << 8) | (c[2] << 16) | (c[3] << 24)).collect(),
+        "I" => d
+            .chunks(4)
+            .map(|c| c[0] | (c[1] << 8) | (c[2] << 16) | (c[3] << 24))
+            .collect(),
         //"Q" => d.chunks(8).map(|c| c[0] | (c[1] << 8) | (c[2] << 16) | (c[3] << 24) | (c[4] << 32) | (c[5] << 40) | (c[6] << 48) | (c[7] << 56)).collect(),
         _ => return slow_parse_bytes(bytes, offset, size, Some(sign), Some(bigend)),
     };
@@ -629,10 +695,15 @@ pub fn parse_bytes(bytes: Vec<i32>, offset: i32, size: i32, sign: Option<bool>, 
     } else {
         x
     }
-
 }
 
-pub fn slow_parse_bytes(bytes: Vec<i32>, offset: i32, size: i32, sign: Option<bool>, bigend: Option<bool>) -> Vec<i32> {
+pub fn slow_parse_bytes(
+    bytes: Vec<i32>,
+    offset: i32,
+    size: i32,
+    sign: Option<bool>,
+    bigend: Option<bool>,
+) -> Vec<i32> {
     let sign = sign.unwrap_or_default();
     let bigend = bigend.unwrap_or_default();
     let (begin, inc) = if bigend {

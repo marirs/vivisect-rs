@@ -66,8 +66,12 @@ impl fmt::Display for Error {
             Error::BadMagic(magic) => write!(fmt, "Invalid magic number: 0x{:x}", magic),
             Error::Malformed(ref msg) => write!(fmt, "Malformed entity: {}", msg),
             Error::BufferTooShort(n, item) => write!(fmt, "Buffer is too short for {} {}", n, item),
-            Error::ArchNotImplemented(ref msg) => write!(fmt, "Architecture not implemented: {}", msg),
-            Error::FuncNotImplemented(ref msg) => write!(fmt, "Functionality not implemented: {}", msg),
+            Error::ArchNotImplemented(ref msg) => {
+                write!(fmt, "Architecture not implemented: {}", msg)
+            }
+            Error::FuncNotImplemented(ref msg) => {
+                write!(fmt, "Functionality not implemented: {}", msg)
+            }
             Error::NoValidFreeMemoryFound(size) => {
                 write!(fmt, "No valid free memory was found of size: {}", size)
             }

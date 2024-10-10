@@ -1,14 +1,14 @@
 #![allow(unused)]
 
-use std::cmp::max;
-use std::rc::Rc;
-use crate::envi::constants::{CC_REG, CC_STACK, CC_STACK_INF, Endianess};
-use crate::envi::{GenericArchitectureModule};
-use crate::envi::registers::RegisterContext;
+use crate::envi::constants::{Endianess, CC_REG, CC_STACK, CC_STACK_INF};
 use crate::envi::memory::{MemoryDef, MemoryObject};
 use crate::envi::operands::OpCode;
-use crate::error::Error::{Generic, UnknownCallingConvention};
+use crate::envi::registers::RegisterContext;
+use crate::envi::GenericArchitectureModule;
 use crate::envi::Result;
+use crate::error::Error::{Generic, UnknownCallingConvention};
+use std::cmp::max;
+use std::rc::Rc;
 
 #[derive(Clone, Default)]
 pub struct EmulatorData {
@@ -21,14 +21,13 @@ pub struct EmulatorData {
     pub op_methods: std::collections::HashMap<String, String>,
 }
 
-pub trait Emulator: RegisterContext + MemoryObject{
-
+pub trait Emulator: RegisterContext + MemoryObject {
     fn get_emulator_data_mut(&mut self) -> &mut EmulatorData;
 
     fn get_emulator_data(&self) -> &EmulatorData;
-    
+
     fn get_arch_module(&self, arch: Option<i32>) -> &GenericArchitectureModule;
-    
+
     fn get_arch_module_mut(&mut self, arch: Option<i32>) -> &mut GenericArchitectureModule;
 
     /// This is the core method for an emulator to do any running of instructions and
@@ -47,7 +46,6 @@ pub trait Emulator: RegisterContext + MemoryObject{
 /// implemented mostly for user-space emulation of
 /// protected mode execution.
 impl<'a> dyn Emulator + 'a {
-    
     /// Initialize an emulator option used by the emulator type.
     /// Arch specific options should begin with <arch>: and platform
     /// options should begin with <platform>:
@@ -72,7 +70,7 @@ impl<'a> dyn Emulator + 'a {
         data.endian = endian;
     }
 
-    fn get_endian(&self) -> Endianess{
+    fn get_endian(&self) -> Endianess {
         let data = self.get_emulator_data();
         data.endian.clone()
     }
@@ -81,17 +79,14 @@ impl<'a> dyn Emulator + 'a {
         let data = self.get_emulator_data();
         data.metadata
             .get(name)
-            .map_or_else(
-                || default.unwrap_or(0), 
-                |val| *val
-            )
+            .map_or_else(|| default.unwrap_or(0), |val| *val)
     }
-    
+
     fn set_meta(&mut self, name: &str, value: i32) {
         let data = self.get_emulator_data_mut();
         data.metadata.insert(name.to_string(), value);
     }
-    
+
     /// Return the data needed to "snapshot" this emulator.  For most
     /// archs, this method will be enough (it takes the memory object,
     /// and register values with it)
@@ -100,7 +95,7 @@ impl<'a> dyn Emulator + 'a {
         let mem = self.get_memory_snap();
         (regs, mem)
     }
-    
+
     fn set_emu_snap(&mut self, snap: (Vec<i32>, Vec<MemoryDef>)) {
         let (regs, mem) = snap;
         self.set_register_snap(regs);
@@ -113,7 +108,7 @@ impl<'a> dyn Emulator + 'a {
     ///
     /// On close, we try to rollback the emulator using the snap.
     fn snap(&mut self) -> (Vec<i32>, Vec<MemoryDef>) {
-        let snap  = self.get_emu_snap();
+        let snap = self.get_emu_snap();
         self.set_emu_snap(snap.clone());
         snap
     }
@@ -166,7 +161,7 @@ impl<'a> dyn Emulator + 'a {
 
     /// Return the value for the operand at index idx for
     /// the given opcode reading memory and register states if necessary.
-    /// 
+    ///
     /// In partially-defined emulation, this may return None
     fn get_oper_value(&self, op: OpCode, indx: i32) -> Result<Option<i32>> {
         let oper = op.get_operands()[indx as usize].clone();
@@ -178,7 +173,9 @@ impl<'a> dyn Emulator + 'a {
     /// (obviously OM_IMMEDIATE *cannot* be set)
     fn set_oper_value(&self, op: OpCode, indx: i32, value: i32) -> Result<()> {
         let mut oper = op.get_operands()[indx as usize].clone();
-        Rc::get_mut(&mut oper).unwrap().set_oper_value(op, Some(self), value)
+        Rc::get_mut(&mut oper)
+            .unwrap()
+            .set_oper_value(op, Some(self), value)
     }
 
     /// Emulator implementors can implement this method to allow
@@ -199,46 +196,59 @@ impl<'a> dyn Emulator + 'a {
     /// to set a function return value. (this should also take
     /// care of any argument cleanup or other return time tasks
     /// for the calling convention)
-    fn exec_call_return(&mut self, value: i32, calling_convention: String, argc: Option<i32>) -> Result<i32>{
+    fn exec_call_return(
+        &mut self,
+        value: i32,
+        calling_convention: String,
+        argc: Option<i32>,
+    ) -> Result<i32> {
         let data = self.get_emulator_data().clone();
         if let Some(cc) = data.emu_calling_conventions.get(&calling_convention) {
-            return Ok(cc.exec_call_return(self, value, argc))
+            return Ok(cc.exec_call_return(self, value, argc));
         }
         Err(UnknownCallingConvention(calling_convention))
     }
-    
+
     fn add_calling_convention(&mut self, name: String, cc: Rc<dyn CallingConvention>) {
         let data = self.get_emulator_data_mut();
         data.emu_calling_conventions.insert(name, cc);
     }
-    
+
     fn has_calling_convention(&self, name: &str) -> bool {
         let data = self.get_emulator_data();
         data.emu_calling_conventions.contains_key(name)
     }
-    
+
     fn get_calling_convention(&self, name: &str) -> Option<&Rc<dyn CallingConvention>> {
         let data = self.get_emulator_data();
         data.emu_calling_conventions.get(name)
     }
-    
+
     fn get_calling_conventions(&self) -> Vec<String> {
         let data = self.get_emulator_data();
-        data.emu_calling_conventions.keys().map(|s| s.clone()).collect()
+        data.emu_calling_conventions
+            .keys()
+            .map(|s| s.clone())
+            .collect()
     }
-    
+
     /// Returns the value of the bytes at the "addr" address, given the size (currently, power of 2 only)
     fn read_mem_value(&self, va: i32, size: i32) -> Result<Option<Vec<i32>>> {
-        if let Ok(data) = MemoryObject::read_memory(self, va, size, None){
+        if let Ok(data) = MemoryObject::read_memory(self, va, size, None) {
             if data.len() as i32 != size {
-                return Err(Generic(format!("Read gave wrong length at {} (va: {} wanted {} got {})", self.get_program_counter(), va, size, data.len() as i32)))
+                return Err(Generic(format!(
+                    "Read gave wrong length at {} (va: {} wanted {} got {})",
+                    self.get_program_counter(),
+                    va,
+                    size,
+                    data.len() as i32
+                )));
             }
-           // parse_bytes()
+            // parse_bytes()
         }
         Ok(None)
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub struct CallingConventionData {
@@ -271,7 +281,8 @@ pub trait CallingConvention {
     /// Returns the number of stack arguments.
     fn get_num_stack_args(&self, _emulator: Option<&dyn Emulator>, argc: i32) -> i32 {
         let data = self.get_data();
-        let rargs = data.arg_def
+        let rargs = data
+            .arg_def
             .iter()
             .filter(|(key, _val)| *key == CC_REG)
             .collect::<Vec<_>>();
@@ -285,7 +296,7 @@ pub trait CallingConvention {
     }
 
     /// Returns a list of the arguments passed to the function.
-    /// 
+    ///
     /// Expects to be called at call/jmp to function entrypoint.
     fn get_precall_args(&self, emulator: &dyn Emulator, mut argc: i32) -> Vec<i32> {
         let data = self.get_data();
@@ -300,20 +311,20 @@ pub trait CallingConvention {
                 CC_REG => {
                     args.push(emulator.get_register(*arg_val));
                     argc -= 1;
-                },
+                }
                 CC_STACK => {
                     args.push(emulator.read_memory_format(sp, "<P")[0]);
                     argc -= 1;
                     sp += data.align;
-                },
-                CC_STACK_INF=> {
+                }
+                CC_STACK_INF => {
                     let mut values = emulator.read_memory_format(sp, format!("<{argc}P").as_str());
                     args.append(&mut values);
                     argc -= values.len() as i32;
                     if argc != 0 {
                         panic!("Wrong number of args from read_memory_format!");
                     }
-                },
+                }
                 _ => {
                     panic!("Unknown argument type: {}", arg_type);
                 }
@@ -321,7 +332,7 @@ pub trait CallingConvention {
         }
         args
     }
-    
+
     fn set_precall_args(&self, emulator: &mut dyn Emulator, mut args: Vec<i32>) {
         let data = self.get_data();
         let mut argc = args.len() as i32;
@@ -336,13 +347,13 @@ pub trait CallingConvention {
                 CC_REG => {
                     emulator.set_register(arg_val, args[cur_arg]);
                     cur_arg += 1;
-                },
+                }
                 CC_STACK => {
                     emulator.write_memory_format(sp, "<P".to_string(), &[args[cur_arg]]);
                     argc -= 1;
                     cur_arg += 1;
                     sp += data.align;
-                },
+                }
                 CC_STACK_INF => {
                     arg_val -= data.align;
                     emulator.write_memory_format(sp, format!("<{argc}P"), &args[cur_arg..]);
@@ -350,7 +361,7 @@ pub trait CallingConvention {
                     if argc != 0 {
                         panic!("Wrong number of args from write_memory_format!");
                     }
-                },
+                }
                 _ => {
                     panic!("Unknown argument type: {}", arg_type);
                 }
@@ -371,14 +382,14 @@ pub trait CallingConvention {
     }
 
     /// Returns the return address.
-    /// 
+    ///
     /// Expects to be called at the function entrypoint.
     fn get_return_address(&self, emulator: &dyn Emulator) -> i32 {
         let data = self.get_data();
         let sp = emulator.get_stack_counter();
         emulator.read_memory_format(sp + data.ret_addr_def.1, "<P")[0]
     }
-    
+
     fn exec_call_return(&self, emulator: &mut dyn Emulator, value: i32, argc: Option<i32>) -> i32 {
         let data = self.get_data();
         let sp = emulator.get_stack_counter();
@@ -391,4 +402,3 @@ pub trait CallingConvention {
         ret_addr
     }
 }
-

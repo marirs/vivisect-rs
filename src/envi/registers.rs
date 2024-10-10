@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use crate::envi::constants::RMETA_NMASK;
-use crate::error::Error::InvalidRegisterName;
 use crate::envi::Result;
+use crate::error::Error::InvalidRegisterName;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct MetaRegister {
@@ -28,7 +28,7 @@ pub struct StatusMetaRegister {
     pub index: i32,
     pub size: i32,
     pub shift_offset: i32,
-    pub description: String
+    pub description: String,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -68,10 +68,9 @@ impl RegisterContextData {
     }
 }
 
-
-pub trait RegisterContext{
+pub trait RegisterContext {
     fn get_register_context_data(&self) -> &RegisterContextData;
-    
+
     fn get_register_context_data_mut(&mut self) -> &mut RegisterContextData;
 
     /// Use this to bulk save off the register state.
@@ -93,11 +92,11 @@ pub trait RegisterContext{
     fn is_dirty(&self) -> bool {
         self.get_register_context_data()._rctx_dirty
     }
-    
+
     fn set_is_dirty(&mut self, dirty: bool) {
         self.get_register_context_data_mut()._rctx_dirty = dirty;
     }
-    
+
     fn set_register_indexes(&mut self, pc_index: i32, sp_index: i32, sr_index: Option<i32>) {
         let data = self.get_register_context_data_mut();
         data._rctx_pc_index = pc_index;
@@ -128,7 +127,7 @@ pub trait RegisterContext{
             data._rcts_vals.push(defal);
         }
     }
-    
+
     fn get_reg_def(&self) -> Vec<(String, i32)> {
         self.get_register_context_data()._rctx_reg_def.clone()
     }
@@ -146,17 +145,24 @@ pub trait RegisterContext{
     /// Optionally a set of status meta registers can be loaded as well.
     /// The argument is a list of tuples with the following format:
     /// (regname, regidx, reg_shift_offset, reg_width, description)
-    fn load_reg_metas(&mut self, reg_metas: Vec<MetaRegister>, stat_metas: Option<Vec<StatusMetaRegister>>) {
+    fn load_reg_metas(
+        &mut self,
+        reg_metas: Vec<MetaRegister>,
+        stat_metas: Option<Vec<StatusMetaRegister>>,
+    ) {
         let data = self.get_register_context_data_mut();
         data._rctx_reg_metas.clone_from(&reg_metas);
         for meta_register in reg_metas {
-            let new_indx = (meta_register.shift_offset << 24) + (meta_register.size << 16) + meta_register.index;
-            data._rctx_names.insert(meta_register.name.clone(), new_indx);
+            let new_indx = (meta_register.shift_offset << 24)
+                + (meta_register.size << 16)
+                + meta_register.index;
+            data._rctx_names
+                .insert(meta_register.name.clone(), new_indx);
             data._rctx_ids.insert(new_indx, meta_register.name.clone());
         }
         data._rctx_stat_metas = stat_metas;
     }
-    
+
     fn is_meta_register(&self, index: i32) -> bool {
         (index & 0xffff) != index
     }
@@ -164,7 +170,10 @@ pub trait RegisterContext{
     /// Return an object which can be stored off, and restored
     /// to re-initialize a register context.  (much like snapshot
     /// but it takes the definitions with it)
-    fn get_register_info(&self, _meta: Option<bool>) -> (Vec<(String, i32)>, Vec<MetaRegister>, i32, i32, Vec<i32>){
+    fn get_register_info(
+        &self,
+        _meta: Option<bool>,
+    ) -> (Vec<(String, i32)>, Vec<MetaRegister>, i32, i32, Vec<i32>) {
         let data = self.get_register_context_data();
         let reg_def = data._rctx_reg_def.clone();
         let reg_metas = data._rctx_reg_metas.clone();
@@ -173,18 +182,24 @@ pub trait RegisterContext{
         let snap = self.get_register_snap();
         (reg_def, reg_metas, pc_index, sp_index, snap)
     }
-    
-    fn set_register_info(&mut self, reg_info: (Vec<(String, i32)>, Vec<MetaRegister>, i32, i32, Vec<i32>)){
+
+    fn set_register_info(
+        &mut self,
+        reg_info: (Vec<(String, i32)>, Vec<MetaRegister>, i32, i32, Vec<i32>),
+    ) {
         let (reg_def, reg_metas, pc_index, sp_index, snap) = reg_info;
         self.load_reg_def(reg_def, None);
         self.load_reg_metas(reg_metas, None);
         self.set_register_snap(snap);
         self.set_register_indexes(pc_index, sp_index, None);
     }
-    
+
     fn get_register_name(&self, index: i32) -> String {
         let data = self.get_register_context_data();
-        data._rctx_ids.get(&index).unwrap_or(&format!("REG{:0>8}", index)).clone()
+        data._rctx_ids
+            .get(&index)
+            .unwrap_or(&format!("REG{:0>8}", index))
+            .clone()
     }
 
     /// Get the value of the program counter for this register context.
@@ -196,11 +211,11 @@ pub trait RegisterContext{
     fn set_program_counter(&mut self, pc: i32) {
         self.set_register(self.get_register_context_data()._rctx_pc_index, pc);
     }
-    
+
     fn get_stack_counter(&self) -> i32 {
         self.get_register(self.get_register_context_data()._rctx_sp_index)
     }
-    
+
     fn set_stack_counter(&mut self, sp: i32) {
         self.set_register(self.get_register_context_data()._rctx_sp_index, sp);
     }
@@ -209,7 +224,7 @@ pub trait RegisterContext{
     fn has_status_register(&self) -> bool {
         self.get_register_context_data()._rctx_sr_index.is_some()
     }
-    
+
     /// Return a list of status register names and descriptions.
     fn get_status_reg_name_desc(&self) -> Vec<(String, String)> {
         let data = self.get_register_context_data();
@@ -342,7 +357,7 @@ pub trait RegisterContext{
     }
 
     /// Return the current value of the specified register index.
-    fn get_register(&self, index: i32) -> i32{
+    fn get_register(&self, index: i32) -> i32 {
         let rindx = index & 0xffff;
         let data = self.get_register_context_data();
         let mut value = data._rctx_vals[rindx as usize];
@@ -355,7 +370,7 @@ pub trait RegisterContext{
     /// Return the appropriate realreg, shift, mask info
     /// for the specified metareg idx (or None if it's not
     /// meta).
-    /// 
+    ///
     /// Example:
     /// real_reg, lshift, mask = r.getMetaRegInfo(x)
     fn get_meta_reg_info(&self, index: i32) -> Option<(i32, i32, i32)> {
@@ -373,8 +388,8 @@ pub trait RegisterContext{
     /// (used when getting a meta register)
     fn _xlate_to_meta_reg(&self, index: i32, mut value: i32) -> i32 {
         let offset = (index >> 24) & 0xff;
-        let width = (index >>16) & 0xff;
-        
+        let width = (index >> 16) & 0xff;
+
         let mask = 2i32.pow(width as u32) - 1;
         if offset != 0 {
             value >>= offset;
@@ -400,7 +415,7 @@ pub trait RegisterContext{
         }
         (value & mask) | (curval & final_mask)
     }
-    
+
     /// Set a register value by index.
     fn set_register(&mut self, index: i32, mut value: i32) {
         let rindx = index & 0xffff;
@@ -437,8 +452,8 @@ pub trait RegisterContext{
     /// of meta-registers) or the name of the register.
     fn get_real_register_name(&self, name: String) -> String {
         if let Ok(index) = self.get_register_index(name.clone()) {
-            return self.get_register_name(index)
-        } 
+            return self.get_register_name(index);
+        }
         name
     }
 }

@@ -1,14 +1,17 @@
 #![allow(unused)]
 
+use crate::envi::constants::{
+    Endianess, ARCH_DEFAULT, ARCH_MASK, MM_EXEC, MM_READ, MM_SHARED, MM_WRITE, PAGE_MASK,
+    PAGE_NMASK,
+};
+use crate::envi::operands::OpCode;
+use crate::envi::ArchitectureModule;
+use crate::envi::Result;
+use crate::error::Error::{MapNotFound, NoValidFreeMemoryFound, SegmentationViolation};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::Deref;
 use std::rc::Rc;
-use crate::envi::constants::{ARCH_DEFAULT, ARCH_MASK, MM_EXEC,Endianess, PAGE_MASK, MM_READ, MM_SHARED, MM_WRITE, PAGE_NMASK};
-use crate::envi::ArchitectureModule;
-use crate::error::Error::{MapNotFound, NoValidFreeMemoryFound, SegmentationViolation};
-use crate::envi::operands::OpCode;
-use crate::envi::Result;
 
 pub type MemoryDef = (i32, i32, MemoryMap, Vec<u8>);
 
@@ -17,7 +20,7 @@ pub type MemoryMap = (i32, i32, i32, Option<String>);
 #[derive(Clone, Default)]
 pub struct MemoryData {
     pub imem_archs: Vec<Rc<dyn ArchitectureModule>>,
-    pub imem_psize: i32
+    pub imem_psize: i32,
 }
 
 /// This is the interface spec (and a few helper utils)
@@ -85,7 +88,14 @@ pub trait Memory {
 
     fn allocate_memory(&mut self, size: i32, perms: i32, suggest_addr: Option<i32>);
 
-    fn add_memory_map(&mut self, map_va: i32, perms: i32, f_name: &str, data: Option<&[u8]>, align: Option<i32>);
+    fn add_memory_map(
+        &mut self,
+        map_va: i32,
+        perms: i32,
+        f_name: &str,
+        data: Option<&[u8]>,
+        align: Option<i32>,
+    );
 
     fn get_memory_maps(&self) -> Vec<(i32, i32, i32, Option<String>)>;
 
@@ -142,7 +152,7 @@ pub trait Memory {
     /// Return the number of contiguous bytes that can be read from the
     /// specified va.
     fn get_max_read_size(&self, va: i32) -> i32 {
-        let mut n_read= 0;
+        let mut n_read = 0;
         let mut mmap = self.get_memory_map(va);
         while mmap.as_ref().is_some() {
             let (map_va, size, perms, _m_name) = mmap.unwrap();
@@ -201,9 +211,8 @@ pub trait Memory {
 #[derive(Clone, Debug, Default)]
 pub struct MemoryObjectData {
     pub map_defs: Vec<MemoryDef>,
-    pub supervisor: bool
+    pub supervisor: bool,
 }
-
 
 pub trait MemoryObject: Memory {
     fn get_memory_object_data_mut(&mut self) -> &mut MemoryObjectData;
@@ -212,13 +221,14 @@ pub trait MemoryObject: Memory {
 
     /// Find a free block of memory (no maps exist) and allocate a new map
     /// Uses findFreeMemoryBlock()
-    fn allocate_memory(&mut self,
-                       size: i32,
-                       perms: i32,
-                       suggest_addr: Option<i32>,
-                       name: Option<String>,
-                       fill: Option<u8>,
-                       align: Option<i32>
+    fn allocate_memory(
+        &mut self,
+        size: i32,
+        perms: i32,
+        suggest_addr: Option<i32>,
+        name: Option<String>,
+        fill: Option<u8>,
+        align: Option<i32>,
     ) -> Result<i32> {
         let base_va = self.find_free_memory_block(size, suggest_addr, None)?;
         let name = name.unwrap_or_default();
@@ -234,7 +244,12 @@ pub trait MemoryObject: Memory {
     /// enough to accommodate a map of this size exists.
     ///
     /// DOES NOT ALLOCATE.  see allocateMemory() if you want the map created
-    fn find_free_memory_block(&self, size: i32, suggest_addr: Option<i32>, min_mem_addr: Option<i32>) -> Result<i32> {
+    fn find_free_memory_block(
+        &self,
+        size: i32,
+        suggest_addr: Option<i32>,
+        min_mem_addr: Option<i32>,
+    ) -> Result<i32> {
         let data = self.get_memory_data();
         let mut base_va = None;
         let mut looped = false;
@@ -244,7 +259,7 @@ pub trait MemoryObject: Memory {
         while base_va.is_none() {
             if temp_va > max_addr {
                 if looped {
-                    return Err(NoValidFreeMemoryFound(size))
+                    return Err(NoValidFreeMemoryFound(size));
                 }
                 looped = true;
                 temp_va = min_mem_addr.unwrap_or(0x1000);
@@ -253,10 +268,11 @@ pub trait MemoryObject: Memory {
             let temp_end_va = temp_va + size - 1;
             for (mmva, mmsz, _, _) in MemoryObject::get_memory_maps(self) {
                 let mmendva = mmva + mmsz - 1;
-                if (temp_va <= mmva && mmva < temp_end_va) ||
-                    (temp_va <= mmendva && mmendva < temp_end_va ) ||
-                    (mmva <= temp_va && temp_va <= mmendva) ||
-                    (mmva <= temp_end_va && temp_end_va <= mmendva) {
+                if (temp_va <= mmva && mmva < temp_end_va)
+                    || (temp_va <= mmendva && mmendva < temp_end_va)
+                    || (mmva <= temp_va && temp_va <= mmendva)
+                    || (mmva <= temp_end_va && temp_end_va <= mmendva)
+                {
                     // we ran into a memory map.  adjust.
                     good = false;
                     temp_va = mmendva;
@@ -274,7 +290,14 @@ pub trait MemoryObject: Memory {
 
     /// Add a memory map to this object...
     /// Returns the length of the map (since alignment could alter it)
-    fn add_memory_map(&mut self, map_va: i32, perms: i32, f_name: &str, data: &[u8], align: Option<i32>) -> i32 {
+    fn add_memory_map(
+        &mut self,
+        map_va: i32,
+        perms: i32,
+        f_name: &str,
+        data: &[u8],
+        align: Option<i32>,
+    ) -> i32 {
         let memory_data = self.get_memory_object_data_mut();
         let mut data_bytes = data.to_vec();
         if let Some(align) = align {
@@ -294,7 +317,7 @@ pub trait MemoryObject: Memory {
     fn del_memory_map(&mut self, va: i32) -> Result<()> {
         let memory_data = self.get_memory_object_data_mut();
         for (indx, (map_va, _map_end, _, _)) in memory_data.map_defs.iter().enumerate() {
-            if *map_va == va  {
+            if *map_va == va {
                 memory_data.map_defs.remove(indx);
                 return Ok(());
             }
@@ -333,7 +356,11 @@ pub trait MemoryObject: Memory {
     }
 
     fn get_memory_maps(&self) -> Vec<MemoryMap> {
-        self.get_memory_object_data().map_defs.iter().map(|(_, _, m_map, _)| m_map.clone()).collect()
+        self.get_memory_object_data()
+            .map_defs
+            .iter()
+            .map(|(_, _, m_map, _)| m_map.clone())
+            .collect()
     }
 
     /// Read memory from maps stored in memory maps.
@@ -349,7 +376,10 @@ pub trait MemoryObject: Memory {
             if *map_va <= va && va < *mmax_va {
                 let (mva, msize, mperms, _mfname) = mmap;
                 if (mperms & MM_READ) == 0 {
-                    let mut msg = format!("Bad Memory Read (no READ permission): {:#0x}, {:#0x} ", va, size);
+                    let mut msg = format!(
+                        "Bad Memory Read (no READ permission): {:#0x}, {:#0x} ",
+                        va, size
+                    );
                     if let Some(orig_va) = orig_va {
                         msg.push_str(&format!("(original va: {:#0x})", orig_va));
                     }
@@ -362,16 +392,24 @@ pub trait MemoryObject: Memory {
                     // perms checks for that map will be performed, and size, etc... and if
                     // an exception must be thrown, future readMemory() can throw it
                     if orig_va.is_none() {
-                       orig_va = Some(va);
+                        orig_va = Some(va);
                     }
                     let mut data = mbytes[offset as usize..].to_vec();
-                    data.append(&mut MemoryObject::read_memory(self, mva + msize, size - max_read_len, orig_va)?);
-                    return Ok(data)
+                    data.append(&mut MemoryObject::read_memory(
+                        self,
+                        mva + msize,
+                        size - max_read_len,
+                        orig_va,
+                    )?);
+                    return Ok(data);
                 }
                 return Ok(mbytes[offset as usize..(offset + size) as usize].to_vec());
             }
         }
-        let mut msg = format!("Bad Memory Read (Invalid memory address): {:#0x}, {:#0x} ", va, size);
+        let mut msg = format!(
+            "Bad Memory Read (Invalid memory address): {:#0x}, {:#0x} ",
+            va, size
+        );
         if let Some(orig_va) = orig_va {
             msg.push_str(&format!("(original va: {:#0x})", orig_va));
         }
@@ -394,7 +432,10 @@ pub trait MemoryObject: Memory {
             if *map_va <= va && va < *mmax_va {
                 let (mva, msize, mperms, _mfname) = mmap;
                 if (*mperms & MM_WRITE) == 0 || memory_data.supervisor {
-                    let mut msg = format!("Bad Memory Write (no WRITE permission): {:#0x}, {:#0x} ", va, bytes_len);
+                    let mut msg = format!(
+                        "Bad Memory Write (no WRITE permission): {:#0x}, {:#0x} ",
+                        va, bytes_len
+                    );
                     if let Some(orig_va) = orig_va {
                         msg.push_str(&format!("(original va: {:#0x})", orig_va));
                     }
@@ -409,7 +450,7 @@ pub trait MemoryObject: Memory {
                     if orig_va.is_none() {
                         orig_va = Some(va);
                     }
-                    let mut byte_data = mbytes[..offset  as usize].to_vec();
+                    let mut byte_data = mbytes[..offset as usize].to_vec();
                     byte_data.append(&mut data[..max_write_len as usize].to_vec());
                     map_def.3 = byte_data;
                     // TODO: Fix this borrow multiple mutable self issue
@@ -420,10 +461,13 @@ pub trait MemoryObject: Memory {
                     mbytes.append(&mut mbytes[(offset + bytes_len) as usize..].to_vec());
                     map_def.3 = mbytes;
                 }
-                return Ok(())
+                return Ok(());
             }
         }
-        let mut msg = format!("Bad Memory Write (Invalid memory address): {:#0x}, {:#0x} ", va, bytes_len);
+        let mut msg = format!(
+            "Bad Memory Write (Invalid memory address): {:#0x}, {:#0x} ",
+            va, bytes_len
+        );
         if let Some(orig_va) = orig_va {
             msg.push_str(&format!("(original va: {:#0x})", orig_va));
         }
@@ -443,7 +487,10 @@ pub trait MemoryObject: Memory {
                 return Ok((offset, mbytes.clone()));
             }
         }
-        Err(SegmentationViolation(va, "Invalid memory address".to_string()))
+        Err(SegmentationViolation(
+            va,
+            "Invalid memory address".to_string(),
+        ))
     }
 
     /// Parse an opcode from the specified virtual address.
@@ -453,7 +500,11 @@ pub trait MemoryObject: Memory {
         let arch = arch.unwrap_or(ARCH_DEFAULT);
         let (offset, bytes) = self.get_byte_def(va)?;
         let data = self.get_memory_data();
-        data.imem_archs[((arch as i64 & ARCH_MASK) >> 16) as usize].arch_parse_opcode(bytes, Some(offset), Some(va))
+        data.imem_archs[((arch as i64 & ARCH_MASK) >> 16) as usize].arch_parse_opcode(
+            bytes,
+            Some(offset),
+            Some(va),
+        )
     }
 
     /// Returns a C-style string from memory.  Stops at Memory Map boundaries, or the first NULL (\x00) byte.
@@ -463,7 +514,10 @@ pub trait MemoryObject: Memory {
             if *mva <= va && va < *mmaxva {
                 let (mva, _msize, mperms, _mfname) = mmap;
                 if (*mperms & MM_READ) == 0 {
-                    return Err(SegmentationViolation(va, "Bad Memory Read (no READ permission)".to_string()));
+                    return Err(SegmentationViolation(
+                        va,
+                        "Bad Memory Read (no READ permission)".to_string(),
+                    ));
                 }
                 let offset = va - mva;
 
@@ -476,15 +530,17 @@ pub trait MemoryObject: Memory {
                     } else {
                         offset + max_len
                     }
-
                 } else {
                     offset + max_len
                 };
                 let c_str = mbytes[offset as usize..mend as usize].to_vec();
-                return Ok(c_str)
+                return Ok(c_str);
             }
         }
-        Err(SegmentationViolation(va, "Invalid memory address".to_string()))
+        Err(SegmentationViolation(
+            va,
+            "Invalid memory address".to_string(),
+        ))
     }
 }
 
@@ -492,7 +548,7 @@ pub trait MemoryObject: Memory {
 pub struct MemoryFile {
     base_addr: i32,
     offset: i32,
-    mem_obj: Rc<dyn MemoryObject>
+    mem_obj: Rc<dyn MemoryObject>,
 }
 
 impl MemoryFile {
@@ -500,7 +556,7 @@ impl MemoryFile {
         MemoryFile {
             base_addr,
             offset: base_addr,
-            mem_obj
+            mem_obj,
         }
     }
 
@@ -515,7 +571,12 @@ impl MemoryFile {
     }
 
     pub fn write(&mut self, data: &[u8]) -> Result<()> {
-        MemoryObject::write_memory(Rc::get_mut(&mut self.mem_obj).unwrap(), self.offset, data, None)?;
+        MemoryObject::write_memory(
+            Rc::get_mut(&mut self.mem_obj).unwrap(),
+            self.offset,
+            data,
+            None,
+        )?;
         self.offset += data.len() as i32;
         Ok(())
     }
@@ -526,7 +587,7 @@ pub struct MemoryCache {
     page_size: i32,
     page_mask: i32,
     page_cache: HashMap<i32, Vec<u8>>,
-    page_dirty: HashMap<i32, bool>
+    page_dirty: HashMap<i32, bool>,
 }
 
 impl MemoryCache {
@@ -537,14 +598,13 @@ impl MemoryCache {
             page_size,
             page_mask: !(page_size - 1),
             page_cache: HashMap::new(),
-            page_dirty: HashMap::new()
+            page_dirty: HashMap::new(),
         }
     }
 
     pub fn cache_page(&self, va: i32) -> Option<Vec<u8>> {
         self.memory.read_memory(va, self.page_size)
     }
-
 
     pub fn read_memory(&mut self, mut va: i32, mut size: i32) -> Result<Vec<u8>> {
         let mut data = vec![];
@@ -557,7 +617,10 @@ impl MemoryCache {
                 page = self.memory.read_memory(page_va, self.page_size);
                 self.page_cache.insert(page_va, page.clone().unwrap());
             }
-            data.append(&mut page.unwrap()[page_offset as usize..(page_offset + chunk_size) as usize].to_vec());
+            data.append(
+                &mut page.unwrap()[page_offset as usize..(page_offset + chunk_size) as usize]
+                    .to_vec(),
+            );
             va += chunk_size;
             size -= chunk_size;
         }
@@ -577,7 +640,9 @@ impl MemoryCache {
             self.page_dirty.insert(page_va, true);
             let mut page_data = page.as_ref().unwrap()[..page_offset as usize].to_vec();
             page_data.append(&mut data[..chunk_size as usize].to_vec());
-            page_data.append(&mut page.as_ref().unwrap()[(page_offset + chunk_size) as usize..].to_vec());
+            page_data.append(
+                &mut page.as_ref().unwrap()[(page_offset + chunk_size) as usize..].to_vec(),
+            );
             page = Some(page_data);
             self.page_cache.insert(page_va, page.clone().unwrap());
 
@@ -585,18 +650,18 @@ impl MemoryCache {
             data = &data[chunk_size as usize..];
         }
     }
-    
+
     pub fn clear_dirty_pages(&mut self) {
         self.page_dirty.clear()
     }
-    
+
     pub fn is_dirty_page(&self, va: i32) -> bool {
         self.page_dirty
             .get(&(va & self.page_mask))
             .cloned()
             .unwrap_or(false)
     }
-    
+
     /// Returns a list of dirty pages as (pageva, pagebytez) tuples.
     pub fn get_dirty_pages(&self) -> Vec<(i32, Vec<u8>)> {
         self.page_dirty

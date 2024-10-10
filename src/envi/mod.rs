@@ -1,19 +1,19 @@
-use std::collections::HashMap;
-use std::rc::Rc;
-use crate::envi::emulator::Emulator;
 use crate::envi::constants::Endianess;
+use crate::envi::emulator::Emulator;
 use crate::envi::operands::OpCode;
 use crate::envi::registers::RegisterContext;
 use crate::error::Error::ArchNotImplemented;
+use std::collections::HashMap;
+use std::rc::Rc;
 
-pub mod constants;
-pub mod utils;
 pub mod archs;
-pub mod operands;
+pub mod constants;
 pub mod emulator;
 pub mod memcanvas;
-pub mod registers;
 pub mod memory;
+pub mod operands;
+pub mod registers;
+pub mod utils;
 
 pub(in crate::envi) type Result<T> = std::result::Result<T, crate::error::Error>;
 
@@ -34,7 +34,7 @@ pub struct ArchitectureModuleData {
 /// architecture.
 pub trait ArchitectureModule {
     fn get_data_mut(&mut self) -> &mut ArchitectureModuleData;
-    
+
     fn get_data(&self) -> &ArchitectureModuleData;
 
     /// Return the envi ARCH_FOO value for this arch.
@@ -47,7 +47,7 @@ pub trait ArchitectureModule {
     fn get_arch_name(&self) -> String {
         self.get_data().arch_name.clone()
     }
-    
+
     /// Every architecture stores numbers either Most-Significant-Byte-first (MSB)
     /// or Least-Significant-Byte-first (LSB).  Most modern architectures are
     /// LSB, however many legacy systems still use MSB architectures.
@@ -60,34 +60,39 @@ pub trait ArchitectureModule {
     fn get_arch_maxinst(&self) -> i32 {
         self.get_data().arch_maxinst
     }
-    
+
     /// Return a string of the byte sequence which corresponds to
     /// a breakpoint (if present) for this architecture.
     fn arch_get_break_instr(&self) -> Result<()> {
         Err(ArchNotImplemented("arch_get_break_instr".to_string()))
     }
-    
+
     /// Return a string of the byte sequence which corresponds to
     /// a no-op (if present) for this architecture.
     fn arch_get_nop_instr(&self) -> Result<()> {
         Err(ArchNotImplemented("arch_get_nop_instr".to_string()))
     }
-    
+
     /// Return an initialized register context object for the architecture.
     fn arch_get_reg_ctx(&self) -> Result<Rc<dyn RegisterContext>> {
         Err(ArchNotImplemented("arch_get_reg_ctx".to_string()))
     }
-    
+
     /// Parse an architecture specific opcode from the bytes provided.
     /// This method should return an OpCode object.
-    fn arch_parse_opcode(&self, _bytes: Vec<u8>, _offset: Option<i32>, _va: Option<i32>) -> Result<OpCode> {
+    fn arch_parse_opcode(
+        &self,
+        _bytes: Vec<u8>,
+        _offset: Option<i32>,
+        _va: Option<i32>,
+    ) -> Result<OpCode> {
         Err(ArchNotImplemented("arch_parse_opcode".to_string()))
     }
-    
+
     /// Returns a tuple of tuples of registers for different register groups.
     /// If not implemented for an architecture, returns a single group with
     /// all non-meta registers.
-    /// 
+    ///
     /// Example:
     /// ``` [ ('all', ['eax', 'ebx', ...] ), ...]```
     fn arch_get_register_groups(&self) -> Result<Vec<(&'static str, Vec<String>)>> {
@@ -95,27 +100,31 @@ pub trait ArchitectureModule {
         let allr = reg_ctx.get_register_names();
         Ok(vec![("all", allr)])
     }
-    
+
     /// Can modify the VA and context based on architecture-specific info.
     /// Default: return the same va, info
-    /// 
+    ///
     /// This hook allows an architecture to correct VA and Architecture, such
     /// as is necessary for ARM/Thumb.
-    /// 
+    ///
     /// "info" should be a dictionary with the `{'arch': ARCH_FOO}`
-    /// 
+    ///
     /// eg.  for ARM, the ARM disassembler would hand in
     /// `{'arch': ARCH_ARMV7}`
-    /// 
+    ///
     /// and if va is odd, that architecture's implementation would return
     /// `((va & -2), {'arch': ARCH_THUMB})`
-    fn arch_modify_func_addr(&self, va: i32, info: HashMap<String, i32>) -> (i32, HashMap<String, i32>) {
+    fn arch_modify_func_addr(
+        &self,
+        va: i32,
+        info: HashMap<String, i32>,
+    ) -> (i32, HashMap<String, i32>) {
         (va, info)
     }
 
     /// Returns a potentially modified set of (tova, reftype, rflags).
     /// Default: return the same (tova, reftype, rflags)
-    /// 
+    ///
     /// This hook allows an architecture to modify an Xref before it's set,
     /// which can be helpful for ARM/Thumb.
     fn arch_modify_xref_addr(&self, to_va: i32, ref_type: i32, r_flags: i32) -> (i32, i32, i32) {
@@ -135,30 +144,30 @@ pub trait ArchitectureModule {
         }
         Ok(self.get_data_mut().bad_ops.clone())
     }
-    
+
     /// Return a default instance of an emulator for the given arch.
     fn get_emulator(&self) -> Result<&Rc<dyn Emulator>> {
         Err(ArchNotImplemented("get_emulator".to_string()))
     }
-    
+
     /// Get the size of a pointer in memory on this architecture.
     fn get_pointer_size(&self) -> Result<i32> {
         Err(ArchNotImplemented("get_pointer_size".to_string()))
     }
-    
+
     /// Return a string representation for a pointer on this arch
     fn get_pointer_string(&self, _va: i32) -> Result<String> {
         Err(ArchNotImplemented("get_pointer_string".to_string()))
     }
-    
+
     fn get_arch_default_call(&self) -> Option<i32> {
         self.get_data().default_call
     }
-    
+
     fn get_plat_default_call(&self, platform: &str) -> Option<i32> {
         self.get_data().plat_default_calls.get(platform).cloned()
     }
-    
+
     fn arch_get_pointer_alignment(&self) -> i32 {
         1
     }

@@ -1,16 +1,19 @@
 #![allow(dead_code, unused)]
 
-
-use crate::{constants::{IF_CALL, IF_RET}, memory::Memory, monitor::EmulationMonitor, workspace::VivWorkspace};
-use std::{borrow::BorrowMut, rc::Rc, collections::HashMap};
-use std::sync::Arc;
-use crate::envi::{ArchitectureModule, GenericArchitectureModule};
 use crate::envi::archs::i386::registers::I386RegisterContext;
 use crate::envi::constants::Endianess;
 use crate::envi::emulator::{CallingConvention, Emulator as EnviEmulator, EmulatorData};
 use crate::envi::memory::{MemoryData, MemoryDef, MemoryObject, MemoryObjectData};
 use crate::envi::registers::{RegisterContext, RegisterContextData};
-
+use crate::envi::{ArchitectureModule, GenericArchitectureModule};
+use crate::{
+    constants::{IF_CALL, IF_RET},
+    memory::Memory,
+    monitor::EmulationMonitor,
+    workspace::VivWorkspace,
+};
+use std::sync::Arc;
+use std::{borrow::BorrowMut, collections::HashMap, rc::Rc};
 
 pub const INIT_STACK_SIZE: usize = 0x8000;
 pub const INIT_STACK_MAP: [u8; INIT_STACK_SIZE] = [0xfe; INIT_STACK_SIZE];
@@ -142,7 +145,6 @@ impl OpCode {
         self.size as usize
     }
 }
-
 
 #[derive(Clone)]
 pub struct WorkspaceEmulatorData {
@@ -348,12 +350,11 @@ pub trait Emulator: WorkspaceEmulator {
     fn get_stack_map_top(&mut self) -> &mut Option<i32>;
 
     fn get_stack_pointer(&mut self) -> &mut Option<i32>;
-    
+
     fn stop_emu(&mut self) {
         self.get_data().emustop = true;
     }
 }
-
 
 #[derive(Clone)]
 pub struct GenericEmulator {
@@ -376,7 +377,7 @@ impl GenericEmulator {
             workspace_data: WorkspaceEmulatorData {
                 workspace: Some(workspace),
                 ..Default::default()
-            }
+            },
         }
     }
 }
@@ -426,14 +427,14 @@ impl WorkspaceEmulator for GenericEmulator {
 
     fn get_path_prop<T>(&self, prop: T) -> String
     where
-        T: Into<String>
+        T: Into<String>,
     {
         todo!()
     }
 
     fn set_path_prop<T>(&self, key: T, value: T) -> Option<String>
     where
-        T: Into<String>
+        T: Into<String>,
     {
         todo!()
     }
@@ -463,7 +464,7 @@ impl WorkspaceEmulator for GenericEmulator {
     }
 
     fn set_memory_snap(&mut self, memory_snap: Vec<MemoryDef>) {
-       MemoryObject::set_memory_snap(self, memory_snap);
+        MemoryObject::set_memory_snap(self, memory_snap);
     }
 
     fn set_emu_opt(&mut self, arch: &str, size: i32) {
@@ -507,7 +508,9 @@ impl crate::envi::memory::Memory for GenericEmulator {
     }
 
     fn set_mem_architecture(&mut self, arch: i32) {
-        EnviEmulator::get_arch_module_mut(self, None).get_data_mut().arch_id = arch;
+        EnviEmulator::get_arch_module_mut(self, None)
+            .get_data_mut()
+            .arch_id = arch;
     }
 
     fn get_pointer_size(&self) -> i32 {
@@ -530,7 +533,14 @@ impl crate::envi::memory::Memory for GenericEmulator {
         MemoryObject::allocate_memory(self, size, perms, suggest_addr, None, None, None);
     }
 
-    fn add_memory_map(&mut self, map_va: i32, perms: i32, f_name: &str, data: Option<&[u8]>, align: Option<i32>) {
+    fn add_memory_map(
+        &mut self,
+        map_va: i32,
+        perms: i32,
+        f_name: &str,
+        data: Option<&[u8]>,
+        align: Option<i32>,
+    ) {
         MemoryObject::add_memory_map(self, map_va, perms, f_name, data.unwrap_or_default(), align);
     }
 
@@ -556,7 +566,10 @@ impl EnviEmulator for GenericEmulator {
         &mut self.arch_module
     }
 
-    fn execute_op_code(&mut self, op: crate::envi::operands::OpCode) -> Result<(), crate::error::Error> {
+    fn execute_op_code(
+        &mut self,
+        op: crate::envi::operands::OpCode,
+    ) -> Result<(), crate::error::Error> {
         todo!()
     }
 }

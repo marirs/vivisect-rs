@@ -1,13 +1,13 @@
 #![allow(unused)]
-use std::rc::Rc;
-use log::warn;
 use crate::envi::constants::{BR_DEREF, BR_FALL, IF_CALL, IF_RET};
 use crate::envi::emulator::Emulator;
 use crate::envi::memcanvas::MemoryCanvas;
-use crate::error::Error::FuncNotImplemented;
 use crate::envi::Result;
+use crate::error::Error::FuncNotImplemented;
+use log::warn;
+use std::rc::Rc;
 
-pub trait Operand{
+pub trait Operand {
     fn is_deref(&self) -> bool {
         false
     }
@@ -26,39 +26,51 @@ pub trait Operand{
     fn is_discrete(&self) -> bool {
         false
     }
-
 }
 
 /// These are the expected methods needed by any implemented operand object
 /// attached to an envi Opcode.  This does *not* have a constructor of it's
 /// pwn on purpose to cut down on memory use and constructor CPU cost.
-impl dyn Operand  {
+impl dyn Operand {
     /// Get the current value for the operand.  If needed, use
     /// the given emulator/workspace/trace to resolve things like
     /// memory and registers.
     ///
     /// NOTE: This API may be passed a None emu and should return what it can
     /// (or None if it can't be resolved)
-    pub fn get_oper_value(&self, _op: OpCode, _emulator: Option<&dyn Emulator>) -> Result<Option<i32>> {
+    pub fn get_oper_value(
+        &self,
+        _op: OpCode,
+        _emulator: Option<&dyn Emulator>,
+    ) -> Result<Option<i32>> {
         Err(FuncNotImplemented("get_oper_value".to_string()))
     }
 
     /// Set the current value for the operand.  If needed, use
     /// the given emulator/workspace/trace to assign things like
     /// memory and registers.
-    pub fn set_oper_value(&mut self, _op: OpCode, _emulator: Option<&dyn Emulator>, _val: i32) -> Result<()> {
+    pub fn set_oper_value(
+        &mut self,
+        _op: OpCode,
+        _emulator: Option<&dyn Emulator>,
+        _val: i32,
+    ) -> Result<()> {
         warn!("set_oper_value not implemented");
         Err(FuncNotImplemented("set_oper_value".to_string()))
     }
 
     /// If the given operand will dereference memory, this method must return `true`.
-    
+
     /// If the operand is a "dereference" operand, this method should use the
     /// specified op/emu to resolve the address of the dereference.
     ///
     /// NOTE: This API may be passed a None emu and should return what it can
     /// (or None if it can't be resolved)
-    pub fn get_oper_addr(&self, _op: OpCode, _emulator: Option<&dyn Emulator>) -> Result<Option<i32>> {
+    pub fn get_oper_addr(
+        &self,
+        _op: OpCode,
+        _emulator: Option<&dyn Emulator>,
+    ) -> Result<Option<i32>> {
         warn!("get_oper_addr not implemented");
         Err(FuncNotImplemented("get_oper_addr".to_string()))
     }
@@ -134,7 +146,7 @@ impl OpCode {
         prefixes: i32,
         size: i32,
         operands: Vec<Rc<dyn Operand>>,
-        iflags: Option<i32>
+        iflags: Option<i32>,
     ) -> Self {
         OpCode {
             opcode,
@@ -159,9 +171,9 @@ impl OpCode {
 
     /// Determines the targets of call/branch instructions.  Fall throughs are
     /// not considered as targets. Deref branches are resolved.
-    /// 
+    ///
     /// Returns [(bva, bflags),...]
-    /// 
+    ///
     /// addr can be `None` in cases where the branch target cannot be computed.
     /// (for example, if BR_DEREF flag is set and cannot read the memory)
     /// Once resolved, the BR_DEREF flag is removed from branch flags.
@@ -176,7 +188,7 @@ impl OpCode {
                 if let Some(emu) = emulator {
                     my_bva = Some(emu.read_memory_format(b_va, "<P")[0]);
                     b_flags &= !BR_DEREF;
-                } else { 
+                } else {
                     my_bva = None;
                 }
             }
@@ -189,15 +201,19 @@ impl OpCode {
     /// Opcode... but only for operands which make sense for XREF analysis.
     /// Override when architecture makes use of odd operands like the program
     /// counter, which returns a real value even without an emulator.
-    pub fn gen_ref_opers(&self, _emulator: Option<&dyn Emulator>) -> impl Iterator<Item=(i32, &Rc<dyn Operand>)> {
-        self.opers.iter().enumerate().map(|(idx, oper)| {
-            (idx as i32, oper)
-        })
+    pub fn gen_ref_opers(
+        &self,
+        _emulator: Option<&dyn Emulator>,
+    ) -> impl Iterator<Item = (i32, &Rc<dyn Operand>)> {
+        self.opers
+            .iter()
+            .enumerate()
+            .map(|(idx, oper)| (idx as i32, oper))
     }
 
     /// Return a list of tuples.  Each tuple contains the target VA of the
     /// branch, and a possible set of flags showing what type of branch it is.
-    /// 
+    ///
     /// See the BR_FOO types for all the supported envi branch flags....
     /// Example: for bva,bflags in op.getBranches():
     pub fn get_branches(&self, _emulator: Option<&dyn Emulator>) -> Vec<(i32, i32)> {
@@ -224,12 +240,21 @@ impl OpCode {
 
     pub fn repr(&self) -> String {
         let pfx = self.get_prefix_name();
-        format!("{}: {} {} ", pfx, self.mnem, self.opers.iter().map(|x| x.repr(self)).collect::<Vec<String>>().join(", "))
+        format!(
+            "{}: {} {} ",
+            pfx,
+            self.mnem,
+            self.opers
+                .iter()
+                .map(|x| x.repr(self))
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
     }
-    
+
     pub fn render(&self, mcanv: &Rc<dyn MemoryCanvas>) {
         mcanv.add_text(self.repr(), None);
-    } 
+    }
 
     pub fn len(&self) -> usize {
         self.size as usize
