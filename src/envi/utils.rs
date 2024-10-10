@@ -492,7 +492,7 @@ lazy_static! {
     ];
     static ref FMT_FLOATS: Vec<Vec<Option<&'static str>>> =
         vec![LE_FMT_FLOAT.clone(), BE_FMT_FLOAT.clone()];
-};
+}
 
 pub fn signed(value: i32, size: i32) -> i32 {
     let x = unsigned(value, size);
