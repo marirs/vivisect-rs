@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(unused)]
 
 pub mod analysis;
 pub mod constants;
@@ -309,8 +310,8 @@ pub mod pe;
 
 #[cfg(feature = "archive")]
 pub mod archive;
-mod envi;
-mod impapi;
+pub mod impapi;
+pub mod envi;
 
 #[cfg(test)]
 mod tests {
