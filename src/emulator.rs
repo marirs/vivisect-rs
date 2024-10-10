@@ -1,5 +1,6 @@
 #![allow(dead_code, unused)]
 
+
 use crate::{constants::{IF_CALL, IF_RET}, memory::Memory, monitor::EmulationMonitor, workspace::VivWorkspace};
 use std::{borrow::BorrowMut, rc::Rc, collections::HashMap};
 use std::sync::Arc;
@@ -9,6 +10,7 @@ use crate::envi::constants::Endianess;
 use crate::envi::emulator::{CallingConvention, Emulator as EnviEmulator, EmulatorData};
 use crate::envi::memory::{MemoryData, MemoryDef, MemoryObject, MemoryObjectData};
 use crate::envi::registers::{RegisterContext, RegisterContextData};
+
 
 pub const INIT_STACK_SIZE: usize = 0x8000;
 pub const INIT_STACK_MAP: [u8; INIT_STACK_SIZE] = [0xfe; INIT_STACK_SIZE];
@@ -141,6 +143,7 @@ impl OpCode {
     }
 }
 
+
 #[derive(Clone)]
 pub struct WorkspaceEmulatorData {
     pub stack_map_base: Option<i32>,
@@ -237,7 +240,7 @@ pub trait WorkspaceEmulator {
     }
 
     fn get_data(&mut self) -> &mut WorkspaceEmulatorData;
-    
+
     fn get_data_ref(&self) -> &WorkspaceEmulatorData;
 
     /// This is called by monitor to stop emulation
@@ -246,10 +249,14 @@ pub trait WorkspaceEmulator {
     }
 
     /// Retrieve a named value from th ecurrent code path context
-    fn get_path_prop<T>(&self, prop: T) -> String where T: Into<String>;
+    fn get_path_prop<T>(&self, prop: T) -> String
+    where
+        T: Into<String>;
 
     /// Set a named value which is only relevant for the current code path.
-    fn set_path_prop<T>(&self, key: T,  value: T) -> Option<String> where T: Into<String>;
+    fn set_path_prop<T>(&self, key: T, value: T) -> Option<String>
+    where
+        T: Into<String>;
 
     /// Snap in an emulation monitor. (see EmulationMonitor doc from vivisect.monitor)
     fn set_emulation_monitor(&self, monitor: EmulationMonitor) {
@@ -260,15 +267,15 @@ pub trait WorkspaceEmulator {
         //self.get_data().workspace.as_ref().unwrap().parse_op_code(va)
         unimplemented!()
     }
-    
+
     fn set_program_counter(&self, va: i32) {
         unimplemented!()
     }
-    
+
     fn get_call_api(&self, va: i32) -> (String, String, String, i32, Vec<String>) {
         unimplemented!()
     }
-    
+
     fn get_calling_convention(&self, name: String) -> Option<Box<dyn CallingConvention>> {
         unimplemented!()
     }
@@ -278,7 +285,7 @@ pub trait WorkspaceEmulator {
     fn check_call(&self, starteip: i32, endeip: i32, op: OpCode) -> bool {
         let is_call = (op.iflags & IF_CALL) != 0;
         if is_call {
-            if self.get_data_ref().func_only{
+            if self.get_data_ref().func_only {
                 self.set_program_counter(starteip + op.len() as i32);
             }
             let api = self.get_call_api(endeip);

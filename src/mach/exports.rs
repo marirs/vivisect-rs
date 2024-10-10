@@ -340,11 +340,11 @@ mod tests {
         let libs = vec!["/usr/lib/libderp.so", "/usr/lib/libthuglife.so"];
         let mut command = load_command::DyldInfoCommand::default();
         command.export_size = exports.len() as u32;
-        let trie = ExportTrie::new(&exports, &command);
+        let trie = ExportTrie::new(exports, &command);
         println!("trie: {:#?}", &trie);
         let exports = trie.exports(&libs).unwrap();
         println!("len: {} exports: {:#?}", exports.len(), &exports);
-        assert_eq!(exports.len() as usize, 3usize)
+        assert_eq!({ exports.len() }, 3usize)
     }
 
     #[test]
@@ -366,7 +366,7 @@ mod tests {
         println!("trie: {:#?}", &trie);
         let exports = trie.exports(&libs).unwrap();
         println!("len: {} exports: {:#?}", exports.len(), &exports);
-        assert_eq!(exports.len() as usize, 3usize);
+        assert_eq!({ exports.len() }, 3usize);
     }
 
     #[test]

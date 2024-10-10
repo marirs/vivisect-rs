@@ -201,7 +201,7 @@ impl Symbol {
     ///
     /// If the symbol has an inline name, then also returns a reference to the name's
     /// location in `bytes`.
-    pub fn parse<'a>(bytes: &'a [u8], offset: usize) -> error::Result<(Option<&'a str>, Symbol)> {
+    pub fn parse(bytes: &[u8], offset: usize) -> error::Result<(Option<&str>, Symbol)> {
         let symbol = bytes.pread::<Symbol>(offset)?;
         let name = if symbol.name[0] != 0 {
             bytes

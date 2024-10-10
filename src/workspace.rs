@@ -279,7 +279,7 @@ impl VivWorkspace {
     /// Example:
     /// vw.set_comment(callva, "This actually calls FOO...")
     pub fn set_comment(&mut self, va: i32, comment: &str, check: bool) {
-        if check && self.comments.get(&va).is_some() {
+        if check && self.comments.contains_key(&va) {
             return;
         }
         todo!();
@@ -492,7 +492,7 @@ impl VivWorkspace {
         let loc = self.get_location(va);
         if let Some(loc_val) = loc {
             let (loc_va, loc_sz, lt, lt_info) = loc_val;
-            if vec![LOC_STRING, LOC_UNI].contains(&lt) {
+            if [LOC_STRING, LOC_UNI].contains(&lt) {
                 return self.repr_va(loc_va);
             }
         }
@@ -1041,7 +1041,7 @@ impl VivWorkspace {
         //     return None;
         // }
         loc.as_ref()?;
-        return if vec![LOC_STRING, LOC_UNI].contains(&loc.as_ref().cloned().unwrap().2) {
+        return if [LOC_STRING, LOC_UNI].contains(&loc.as_ref().cloned().unwrap().2) {
             if loc.as_ref().cloned().unwrap().3.is_empty() {
                 return loc;
             }
@@ -1122,7 +1122,7 @@ impl VivWorkspace {
     }
 
     pub fn is_function(&self, func_va: i32) -> bool {
-        self.funcmeta.get(&func_va).is_some()
+        self.funcmeta.contains_key(&func_va)
     }
 
     /// Returns the name of the specified virtual address (or None).
@@ -1243,7 +1243,7 @@ impl VivWorkspace {
     /// Return the VA for this function.  This will search code blocks
     /// and check for a function va.
     pub fn get_function(&self, va: i32) -> Option<i32> {
-        if self.funcmeta.get(&va).is_some() {
+        if self.funcmeta.contains_key(&va) {
             return Some(va);
         }
         let cbtup = self.get_code_block(va);
@@ -1301,7 +1301,7 @@ impl VivWorkspace {
         if ploc.is_some() {
             let mut modified = false;
             let (p_va, p_size, p_type, mut p_info) = ploc.as_ref().cloned().unwrap();
-            if !vec![LOC_STRING, LOC_UNI].contains(&p_type) {
+            if ![LOC_STRING, LOC_UNI].contains(&p_type) {
                 return (va, size, subs);
             }
             if !p_info.contains(&(va, size)) {
@@ -1583,7 +1583,7 @@ impl Memory for VivWorkspace {
         }
         let msize = bytes.len() as i32;
         let mmap = (map_va, msize, perms, fname.to_string());
-        let hlpr = (map_va, map_va + msize as i32, mmap, bytes);
+        let hlpr = (map_va, map_va + msize, mmap, bytes);
         self._map_defs.push(hlpr);
         // self.locmap.init_map_lookup(map_va, msize, None);
         msize

@@ -23,8 +23,7 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
     let mut brefs = Vec::new();
     let mut size = 0;
     let mut opcount = 0;
-    while !todo.is_empty() {
-        let start = todo.pop().unwrap();
+    while let Some(start) = todo.pop() {
         // If we hit code we've already done, proceed.
         if *done.get(&start).unwrap() {
             continue;
@@ -116,8 +115,7 @@ pub fn analyze_function(mut workspace: VivWorkspace, funcva: i32) {
     brefs.sort();
     brefs.reverse();
     let mut bcnt = 0;
-    while !brefs.is_empty() {
-        let (bva, is_begin) = brefs.pop().unwrap();
+    while let Some((bva, is_begin)) = brefs.pop() {
         if !is_begin {
             continue;
         }
@@ -266,8 +264,7 @@ impl Analyzer for StringConstantAnalyzer {
                             }
                             let loc = workspace.get_location(reference.as_ref().cloned().unwrap());
                             if loc.is_some()
-                                && vec![LOC_UNI, LOC_STRING]
-                                    .contains(&loc.as_ref().cloned().unwrap().2)
+                                && [LOC_UNI, LOC_STRING].contains(&loc.as_ref().cloned().unwrap().2)
                             {
                                 continue;
                             }

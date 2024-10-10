@@ -31,8 +31,6 @@ impl EmulationMonitor {
     pub fn get_anomalies(&mut self) -> Vec<(i32, String)> {
         self.emulation_anomalies.clone()
     }
-    
-    pub fn api_call(&mut self, op_code: OpCode, ) {
-        
-    }
+
+    pub fn api_call(&mut self, op_code: OpCode) {}
 }

@@ -349,7 +349,7 @@ mod tests {
 
     #[test]
     fn string_table_excludes_length() {
-        let coff = Coff::parse(&&COFF_FILE_SINGLE_STRING_IN_STRING_TABLE[..]).unwrap();
+        let coff = Coff::parse(&COFF_FILE_SINGLE_STRING_IN_STRING_TABLE[..]).unwrap();
         let string_table = coff.strings.to_vec().unwrap();
 
         assert!(string_table == vec!["ExitProcess"]);
