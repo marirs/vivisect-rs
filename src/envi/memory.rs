@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::Deref;
@@ -12,10 +14,10 @@ pub type MemoryDef = (i32, i32, MemoryMap, Vec<u8>);
 
 pub type MemoryMap = (i32, i32, i32, Option<String>);
 
-pub trait MemoryData {
-    fn get_imem_archs(&self) -> Vec<&Rc<dyn ArchitectureModule>>;
-
-    fn get_imem_psize(&self) -> i32;
+#[derive(Clone, Default)]
+pub struct MemoryData {
+    pub imem_archs: Vec<Rc<dyn ArchitectureModule>>,
+    pub imem_psize: i32
 }
 
 /// This is the interface spec (and a few helper utils)
@@ -25,7 +27,7 @@ pub trait MemoryData {
 /// that over-riding anything (like isValidPointer!) can
 /// be faster than the default implementation, DO IT!
 pub trait Memory {
-    fn get_memory_data(&self) -> &Rc<dyn MemoryData>;
+    fn get_memory_data(&self) -> &MemoryData;
 
     fn get_endian(&self) -> Endianess;
 
@@ -36,7 +38,7 @@ pub trait Memory {
     /// Get a reference to the default arch module for the memory object.
     fn get_mem_arch_module(&self, arch: Option<i32>) -> &Rc<dyn ArchitectureModule> {
         let arch = arch.unwrap_or(ARCH_DEFAULT);
-        self.get_memory_data().get_imem_archs()[arch as usize]
+        &self.get_memory_data().imem_archs[arch as usize]
     }
 
     fn get_pointer_size(&self) -> i32;
@@ -50,7 +52,7 @@ pub trait Memory {
     /// Write the given bytes to the specified virtual address.
     ///
     /// Example: mem.write_memory(0x41414141, "VISI".as_bytes())
-    fn write_memory(&self, addr: i32, data: &[u8]);
+    fn write_memory(&mut self, addr: i32, data: &[u8]);
 
     /// Change the protections for the given memory map. On most platforms
     /// the va/size *must* exactly match an existing memory map.
@@ -81,9 +83,9 @@ pub trait Memory {
         true
     }
 
-    fn allocate_memory(&self, size: i32, perms: i32, suggest_addr: Option<i32>);
+    fn allocate_memory(&mut self, size: i32, perms: i32, suggest_addr: Option<i32>);
 
-    fn add_memory_map(&self, map_va: i32, perms: i32, f_name: &str, data: Option<&[u8]>, align: Option<i32>);
+    fn add_memory_map(&mut self, map_va: i32, perms: i32, f_name: &str, data: Option<&[u8]>, align: Option<i32>);
 
     fn get_memory_maps(&self) -> Vec<(i32, i32, i32, Option<String>)>;
 
@@ -91,12 +93,12 @@ pub trait Memory {
         unimplemented!()
     }
 
-    fn write_memory_format(&self, addr: i32, mut fmt: String, data: &[i32]) {
+    fn write_memory_format(&mut self, addr: i32, mut fmt: String, data: &[i32]) {
         let memory_data = self.get_memory_data();
-        if memory_data.get_imem_psize() == 4 {
-            fmt = fmt.replace("P", "I");
-        } else if memory_data.get_imem_psize() == 8 {
-            fmt = fmt.replace("P", "Q");
+        if memory_data.imem_psize == 4 {
+            fmt = fmt.replace('P', "I");
+        } else if memory_data.imem_psize == 8 {
+            fmt = fmt.replace('P', "Q");
         }
         // Pack the data and fmt into a struct and write it to memory
         let packed_data = format!("{{\"fmt\": {fmt}, \"data\": {data:?} }}");
@@ -109,12 +111,12 @@ pub trait Memory {
 
     /// Read a number from memory of the given size.
     fn read_mem_value(&self, addr: i32, size: i32) -> Option<i64> {
-        let bytes = self.read_memory(addr, size);
+        let _bytes = self.read_memory(addr, size);
         None
     }
 
     /// Write a number from memory of the given size.
-    fn write_mem_value(&self, addr: i32, value: i64, size: i32) {
+    fn write_mem_value(&mut self, addr: i32, value: i64, size: i32) {
         let mut bytes = vec![0; size as usize];
         for i in 0..size {
             bytes[i as usize] = (value >> (i * 8)) as u8;
@@ -192,7 +194,7 @@ pub trait Memory {
     fn parse_op_code(&self, va: Option<i32>, arch: Option<i32>) -> Result<OpCode> {
         let arch = arch.unwrap_or(ARCH_DEFAULT);
         let b = self.read_memory(va.unwrap(), 16).unwrap();
-        self.get_memory_data().get_imem_archs()[arch as usize >> 16].arch_parse_opcode(b, Some(0), va)
+        self.get_memory_data().imem_archs[arch as usize >> 16].arch_parse_opcode(b, Some(0), va)
     }
 }
 
@@ -203,7 +205,7 @@ pub struct MemoryObjectData {
 }
 
 
-pub trait MemoryObject: Memory + Debug {
+pub trait MemoryObject: Memory {
     fn get_memory_object_data_mut(&mut self) -> &mut MemoryObjectData;
 
     fn get_memory_object_data(&self) -> &MemoryObjectData;
@@ -238,7 +240,7 @@ pub trait MemoryObject: Memory + Debug {
         let mut looped = false;
 
         let mut temp_va = suggest_addr.unwrap_or(0x1000);
-        let max_addr = (1 << (8 * data.get_imem_psize())) - 1;
+        let max_addr = (1 << (8 * data.imem_psize)) - 1;
         while base_va.is_none() {
             if temp_va > max_addr {
                 if looped {
@@ -451,7 +453,7 @@ pub trait MemoryObject: Memory + Debug {
         let arch = arch.unwrap_or(ARCH_DEFAULT);
         let (offset, bytes) = self.get_byte_def(va)?;
         let data = self.get_memory_data();
-        data.get_imem_archs()[((arch as i64 & ARCH_MASK) >> 16) as usize].arch_parse_opcode(bytes, Some(offset), Some(va))
+        data.imem_archs[((arch as i64 & ARCH_MASK) >> 16) as usize].arch_parse_opcode(bytes, Some(offset), Some(va))
     }
 
     /// Returns a C-style string from memory.  Stops at Memory Map boundaries, or the first NULL (\x00) byte.
@@ -464,7 +466,7 @@ pub trait MemoryObject: Memory + Debug {
                     return Err(SegmentationViolation(va, "Bad Memory Read (no READ permission)".to_string()));
                 }
                 let offset = va - mva;
-                
+
                 // now find the end of the string based on either \x00, maxlen, or end of map
                 let mend = if let Some(end) = mbytes.iter().position(|&x| x == 0x00) {
                     // Couldn't find the NULL byte go to th eend of the map or maxlen
@@ -486,7 +488,7 @@ pub trait MemoryObject: Memory + Debug {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct MemoryFile {
     base_addr: i32,
     offset: i32,

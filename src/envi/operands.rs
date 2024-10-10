@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::rc::Rc;
 use log::warn;
 use crate::envi::constants::{BR_DEREF, BR_FALL, IF_CALL, IF_RET};
@@ -5,7 +6,6 @@ use crate::envi::emulator::Emulator;
 use crate::envi::memcanvas::MemoryCanvas;
 use crate::error::Error::FuncNotImplemented;
 use crate::envi::Result;
-use crate::envi::memory::Memory;
 
 pub trait Operand{
     fn is_deref(&self) -> bool {

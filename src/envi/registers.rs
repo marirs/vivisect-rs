@@ -31,7 +31,7 @@ pub struct StatusMetaRegister {
     pub description: String
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct RegisterContextData {
     _rctx_vals: Vec<i32>,
     _rctx_dirty: bool,

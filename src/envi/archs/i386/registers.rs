@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 // """
 // Home of the i386 module's register specs/code.
 // """
@@ -226,6 +228,7 @@ pub fn get_reg_offset(regname: &str) -> i32 {
 	panic!("getRegOffset doesn't know about: {}", regname);
 }
 
+#[derive(Clone)]
 pub struct I386RegisterContext {
 	pub regs: Vec<(String, i32)>,
 	pub metas: Vec<MetaRegister>,

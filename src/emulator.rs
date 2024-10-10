@@ -2,7 +2,13 @@
 
 use crate::{constants::{IF_CALL, IF_RET}, memory::Memory, monitor::EmulationMonitor, workspace::VivWorkspace};
 use std::{borrow::BorrowMut, rc::Rc, collections::HashMap};
-use crate::envi::CallingConvention;
+use std::sync::Arc;
+use crate::envi::{ArchitectureModule, GenericArchitectureModule};
+use crate::envi::archs::i386::registers::I386RegisterContext;
+use crate::envi::constants::Endianess;
+use crate::envi::emulator::{CallingConvention, Emulator as EnviEmulator, EmulatorData};
+use crate::envi::memory::{MemoryData, MemoryDef, MemoryObject, MemoryObjectData};
+use crate::envi::registers::{RegisterContext, RegisterContextData};
 
 pub const INIT_STACK_SIZE: usize = 0x8000;
 pub const INIT_STACK_MAP: [u8; INIT_STACK_SIZE] = [0xfe; INIT_STACK_SIZE];
@@ -135,7 +141,7 @@ impl OpCode {
     }
 }
 
-
+#[derive(Clone)]
 pub struct WorkspaceEmulatorData {
     pub stack_map_base: Option<i32>,
     pub stack_map_mask: Option<i32>,
@@ -144,7 +150,7 @@ pub struct WorkspaceEmulatorData {
     pub workspace: Option<VivWorkspace>,
     pub func_va: Option<i32>,
     pub emustop: bool,
-    pub hooks: HashMap<i32, Box<dyn Fn()>>,
+    pub hooks: HashMap<i32, Arc<Box<dyn Fn()>>>,
     pub taints: HashMap<i32, i32>,
     pub taint_va: Vec<i32>,
     pub taint_offset: i32,
@@ -312,14 +318,14 @@ pub trait WorkspaceEmulator {
 
     fn get_program_counter(&mut self) -> i32;
 
-    fn get_memory_snap(&self) -> Vec<(i32, i32, Vec<String>, i32)>;
+    fn get_memory_snap(&self) -> Vec<MemoryDef>;
 
-    fn set_memory_snap(&self, memory_snap: Vec<(i32, i32, Vec<String>, i32)>);
+    fn set_memory_snap(&mut self, memory_snap: Vec<MemoryDef>);
 
-    fn set_emu_opt(&self, arch: &str, size: i32);
+    fn set_emu_opt(&mut self, arch: &str, size: i32);
 }
 
-pub trait Emulator {
+pub trait Emulator: WorkspaceEmulator {
     fn get_vivworkspace(&mut self) -> VivWorkspace;
 
     fn get_func_va(&mut self) -> i32;
@@ -335,86 +341,50 @@ pub trait Emulator {
     fn get_stack_map_top(&mut self) -> &mut Option<i32>;
 
     fn get_stack_pointer(&mut self) -> &mut Option<i32>;
+    
+    fn stop_emu(&mut self) {
+        self.get_data().emustop = true;
+    }
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct GenericEmulator {
-    pub(crate) stack_map_base: Option<i32>,
-    stack_map_mask: Option<i32>,
-    stack_map_top: Option<i32>,
-    stack_pointer: Option<i32>,
-    workspace: VivWorkspace,
-    func_va: Option<i32>,
-    emustop: bool,
-    hooks: HashMap<i32, i32>,
-    taints: HashMap<i32, i32>,
-    base: i32,
-    taint_va: Vec<i16>,
-    taint_offset: i16,
-    taint_mask: i32,
-    taint_byte: u8,
-    taint_repr: HashMap<i32, i32>,
-    uninit_use: HashMap<i32, i32>,
-    log_write: bool,
-    log_read: bool,
-    path: String,
-    cur_path: String,
-    op: Option<i32>,
-    emu_mon: Option<EmulationMonitor>,
-    p_size: i32,
-    safe_mem: bool,
-    func_only: bool,
-    strict_ops: bool,
+    arch_module: GenericArchitectureModule,
+    emulator_data: EmulatorData,
+    memory_data: MemoryData,
+    memory_object_data: MemoryObjectData,
+    register_context: Rc<dyn RegisterContext>,
+    workspace_data: WorkspaceEmulatorData,
 }
 
 impl GenericEmulator {
     pub fn new(workspace: VivWorkspace) -> Self {
         GenericEmulator {
-            stack_map_base: None,
-            stack_map_mask: None,
-            stack_map_top: None,
-            stack_pointer: None,
-            workspace,
-            func_va: None,
-            emustop: false,
-            hooks: Default::default(),
-            taints: Default::default(),
-            base: 0,
-            taint_va: Vec::new(),
-            taint_offset: 0,
-            taint_mask: 0,
-            taint_byte: 0,
-            taint_repr: Default::default(),
-            uninit_use: Default::default(),
-            log_write: false,
-            log_read: false,
-            path: "".to_string(),
-            cur_path: "".to_string(),
-            op: None,
-            emu_mon: None,
-            p_size: 0,
-            safe_mem: false,
-            func_only: false,
-            strict_ops: false,
+            arch_module: Default::default(),
+            emulator_data: Default::default(),
+            memory_data: Default::default(),
+            memory_object_data: Default::default(),
+            register_context: Rc::new(I386RegisterContext::new()),
+            workspace_data: WorkspaceEmulatorData {
+                workspace: Some(workspace),
+                ..Default::default()
+            }
         }
-    }
-    pub fn read_memory_format(&self, va: i32, taint_bytes: &str) -> Vec<i32> {
-        Vec::new()
     }
 }
 
 impl Emulator for GenericEmulator {
     fn get_vivworkspace(&mut self) -> VivWorkspace {
-        self.workspace.clone()
+        self.workspace_data.workspace.clone().unwrap()
     }
 
     fn get_func_va(&mut self) -> i32 {
-        self.func_va.as_ref().cloned().unwrap()
+        self.workspace_data.func_va.as_ref().cloned().unwrap()
     }
 
     fn is_emu_stopped(&self) -> bool {
-        self.emustop
+        self.workspace_data.emustop
     }
 
     fn get_hooks(&mut self) -> Vec<String> {
@@ -422,18 +392,164 @@ impl Emulator for GenericEmulator {
     }
 
     fn get_stack_map_base(&mut self) -> &mut Option<i32> {
-        self.stack_map_base.borrow_mut()
+        self.workspace_data.stack_map_base.borrow_mut()
     }
 
     fn get_stack_map_mask(&mut self) -> &mut Option<i32> {
-        self.stack_map_mask.borrow_mut()
+        self.workspace_data.stack_map_mask.borrow_mut()
     }
 
     fn get_stack_map_top(&mut self) -> &mut Option<i32> {
-        self.stack_map_top.borrow_mut()
+        self.workspace_data.stack_map_top.borrow_mut()
     }
 
     fn get_stack_pointer(&mut self) -> &mut Option<i32> {
-        self.stack_pointer.borrow_mut()
+        self.workspace_data.stack_pointer.borrow_mut()
+    }
+}
+
+impl WorkspaceEmulator for GenericEmulator {
+    fn get_data(&mut self) -> &mut WorkspaceEmulatorData {
+        &mut self.workspace_data
+    }
+
+    fn get_data_ref(&self) -> &WorkspaceEmulatorData {
+        &self.workspace_data
+    }
+
+    fn get_path_prop<T>(&self, prop: T) -> String
+    where
+        T: Into<String>
+    {
+        todo!()
+    }
+
+    fn set_path_prop<T>(&self, key: T, value: T) -> Option<String>
+    where
+        T: Into<String>
+    {
+        todo!()
+    }
+
+    fn add_memory_map(&mut self, map_base: i32, size: i32, f_name: &str, map: Vec<u8>) {
+        MemoryObject::add_memory_map(self, map_base, size, f_name, map.as_slice(), None);
+    }
+
+    fn set_stack_counter(&mut self, va: i32) {
+        todo!()
+    }
+
+    fn write_memory(&mut self, va: i32, taint_bytes: Vec<u8>) {
+        MemoryObject::write_memory(self, va, taint_bytes.as_slice(), None);
+    }
+
+    fn get_stack_counter(&mut self) -> Option<i32> {
+        todo!()
+    }
+
+    fn get_program_counter(&mut self) -> i32 {
+        RegisterContext::get_program_counter(self)
+    }
+
+    fn get_memory_snap(&self) -> Vec<MemoryDef> {
+        MemoryObject::get_memory_snap(self)
+    }
+
+    fn set_memory_snap(&mut self, memory_snap: Vec<MemoryDef>) {
+       MemoryObject::set_memory_snap(self, memory_snap);
+    }
+
+    fn set_emu_opt(&mut self, arch: &str, size: i32) {
+        todo!()
+    }
+}
+
+impl RegisterContext for GenericEmulator {
+    fn get_register_context_data(&self) -> &RegisterContextData {
+        self.register_context.get_register_context_data()
+    }
+
+    fn get_register_context_data_mut(&mut self) -> &mut RegisterContextData {
+        Rc::get_mut(&mut self.register_context)
+            .unwrap()
+            .get_register_context_data_mut()
+    }
+}
+
+impl MemoryObject for GenericEmulator {
+    fn get_memory_object_data_mut(&mut self) -> &mut MemoryObjectData {
+        &mut self.memory_object_data
+    }
+
+    fn get_memory_object_data(&self) -> &MemoryObjectData {
+        &self.memory_object_data
+    }
+}
+
+impl crate::envi::memory::Memory for GenericEmulator {
+    fn get_memory_data(&self) -> &MemoryData {
+        &self.memory_data
+    }
+
+    fn get_endian(&self) -> Endianess {
+        EnviEmulator::get_emulator_data(self).endian.clone()
+    }
+
+    fn set_endian(&mut self, endian: Endianess) {
+        EnviEmulator::get_emulator_data_mut(self).endian = endian;
+    }
+
+    fn set_mem_architecture(&mut self, arch: i32) {
+        EnviEmulator::get_arch_module_mut(self, None).get_data_mut().arch_id = arch;
+    }
+
+    fn get_pointer_size(&self) -> i32 {
+        todo!()
+    }
+
+    fn read_memory(&self, addr: i32, size: i32) -> Option<Vec<u8>> {
+        MemoryObject::read_memory(self, addr, size, None).ok()
+    }
+
+    fn write_memory(&mut self, addr: i32, data: &[u8]) {
+        MemoryObject::write_memory(self, addr, data, None);
+    }
+
+    fn protect_memory(&self, addr: i32, size: i32, perms: i32) {
+        todo!()
+    }
+
+    fn allocate_memory(&mut self, size: i32, perms: i32, suggest_addr: Option<i32>) {
+        MemoryObject::allocate_memory(self, size, perms, suggest_addr, None, None, None);
+    }
+
+    fn add_memory_map(&mut self, map_va: i32, perms: i32, f_name: &str, data: Option<&[u8]>, align: Option<i32>) {
+        MemoryObject::add_memory_map(self, map_va, perms, f_name, data.unwrap_or_default(), align);
+    }
+
+    fn get_memory_maps(&self) -> Vec<(i32, i32, i32, Option<String>)> {
+        MemoryObject::get_memory_maps(self)
+    }
+}
+
+impl EnviEmulator for GenericEmulator {
+    fn get_emulator_data_mut(&mut self) -> &mut EmulatorData {
+        &mut self.emulator_data
+    }
+
+    fn get_emulator_data(&self) -> &EmulatorData {
+        &self.emulator_data
+    }
+
+    fn get_arch_module(&self, arch: Option<i32>) -> &GenericArchitectureModule {
+        &self.arch_module
+    }
+
+    fn get_arch_module_mut(&mut self, arch: Option<i32>) -> &mut GenericArchitectureModule {
+        &mut self.arch_module
+    }
+
+    fn execute_op_code(&mut self, op: crate::envi::operands::OpCode) -> Result<(), crate::error::Error> {
+        todo!()
     }
 }

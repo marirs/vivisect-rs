@@ -17,38 +17,35 @@ pub mod memory;
 
 pub(in crate::envi) type Result<T> = std::result::Result<T, crate::error::Error>;
 
-
-
-pub trait ArchitectureModuleData {
-    fn get_arch_id(&self) -> i32;
-    fn get_arch_name(&self) -> String;
-    fn get_arch_maxinst(&self) -> i32;
-    fn get_arch_bad_op_bytes(&self) -> Vec<Vec<u8>>;
-    fn get_endian(&self) -> Endianess;
-    fn get_bad_ops(&mut self) -> &mut Vec<OpCode>;
-    
-    fn get_default_call(&self) -> Option<i32>;
-    fn get_plat_default_calls(&self) -> HashMap<&str, i32>;
+#[derive(Clone, Default)]
+pub struct ArchitectureModuleData {
+    pub arch_id: i32,
+    pub arch_name: String,
+    pub arch_maxinst: i32,
+    pub arch_bad_op_bytes: Vec<Vec<u8>>,
+    pub endian: Endianess,
+    pub bad_ops: Vec<OpCode>,
+    pub default_call: Option<i32>,
+    pub plat_default_calls: HashMap<&'static str, i32>,
 }
-
 
 /// An architecture module implements methods to deal
 /// with the creation of envi objects for the specified
 /// architecture.
 pub trait ArchitectureModule {
-    fn get_data_mut(&mut self) -> &mut dyn ArchitectureModuleData;
+    fn get_data_mut(&mut self) -> &mut ArchitectureModuleData;
     
-    fn get_data(&self) -> &dyn ArchitectureModuleData;
+    fn get_data(&self) -> &ArchitectureModuleData;
 
     /// Return the envi ARCH_FOO value for this arch.
     fn get_arch_id(&self) -> i32 {
-        self.get_data().get_arch_id()
+        self.get_data().arch_id
     }
 
     /// Get the "humon" readable name for the arch implemented
     /// in this module.
     fn get_arch_name(&self) -> String {
-        self.get_data().get_arch_name()
+        self.get_data().arch_name.clone()
     }
     
     /// Every architecture stores numbers either Most-Significant-Byte-first (MSB)
@@ -56,12 +53,12 @@ pub trait ArchitectureModule {
     /// LSB, however many legacy systems still use MSB architectures.
     fn get_endian(&self) -> Endianess {
         let data = self.get_data();
-        let endian = data.get_endian();
+        let endian = data.endian.clone();
         endian
     }
 
     fn get_arch_maxinst(&self) -> i32 {
-        self.get_data().get_arch_maxinst()
+        self.get_data().arch_maxinst
     }
     
     /// Return a string of the byte sequence which corresponds to
@@ -128,15 +125,15 @@ pub trait ArchitectureModule {
     /// Returns a list of opcodes which are indicators of wrong disassembly.
     /// `bytes` is `None` to use the architecture default, or can be a custom list.
     fn arch_get_bad_ops(&mut self, bytes: Option<Vec<Vec<u8>>>) -> Result<Vec<OpCode>> {
-        if bytes.as_ref().is_none() && self.get_data_mut().get_bad_ops().len() > 0 {
-            return Ok(self.get_data_mut().get_bad_ops().clone());
+        if bytes.as_ref().is_none() && self.get_data_mut().bad_ops.len() > 0 {
+            return Ok(self.get_data_mut().bad_ops.clone());
         }
-        *self.get_data_mut().get_bad_ops() = vec![];
+        self.get_data_mut().bad_ops = vec![];
         for bad_bytes in bytes.unwrap().iter() {
             let op_code = self.arch_parse_opcode(bad_bytes.clone(), None, None)?;
-            self.get_data_mut().get_bad_ops().push(op_code);
+            self.get_data_mut().bad_ops.push(op_code);
         }
-        Ok(self.get_data_mut().get_bad_ops().clone())
+        Ok(self.get_data_mut().bad_ops.clone())
     }
     
     /// Return a default instance of an emulator for the given arch.
@@ -155,14 +152,36 @@ pub trait ArchitectureModule {
     }
     
     fn get_arch_default_call(&self) -> Option<i32> {
-        self.get_data().get_default_call()
+        self.get_data().default_call
     }
     
     fn get_plat_default_call(&self, platform: &str) -> Option<i32> {
-        self.get_data().get_plat_default_calls().get(platform).cloned()
+        self.get_data().plat_default_calls.get(platform).cloned()
     }
     
     fn arch_get_pointer_alignment(&self) -> i32 {
         1
+    }
+}
+
+#[derive(Clone)]
+pub struct GenericArchitectureModule {
+    data: ArchitectureModuleData,
+}
+
+impl Default for GenericArchitectureModule {
+    fn default() -> Self {
+        let data = ArchitectureModuleData::default();
+        GenericArchitectureModule { data }
+    }
+}
+
+impl ArchitectureModule for GenericArchitectureModule {
+    fn get_data_mut(&mut self) -> &mut ArchitectureModuleData {
+        &mut self.data
+    }
+
+    fn get_data(&self) -> &ArchitectureModuleData {
+        &self.data
     }
 }

@@ -1,14 +1,16 @@
+#![allow(unused)]
+
 use std::cmp::max;
 use std::rc::Rc;
 use crate::envi::constants::{CC_REG, CC_STACK, CC_STACK_INF, Endianess};
-use crate::envi::ArchitectureModule;
+use crate::envi::{GenericArchitectureModule};
 use crate::envi::registers::RegisterContext;
 use crate::envi::memory::{MemoryDef, MemoryObject};
 use crate::envi::operands::OpCode;
 use crate::error::Error::{Generic, UnknownCallingConvention};
 use crate::envi::Result;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct EmulatorData {
     pub endian: Endianess,
     pub metadata: std::collections::HashMap<String, i32>,
@@ -25,7 +27,9 @@ pub trait Emulator: RegisterContext + MemoryObject{
 
     fn get_emulator_data(&self) -> &EmulatorData;
     
-    fn get_arch_module(&self, arch: Option<i32>) -> &Rc<dyn ArchitectureModule>;
+    fn get_arch_module(&self, arch: Option<i32>) -> &GenericArchitectureModule;
+    
+    fn get_arch_module_mut(&mut self, arch: Option<i32>) -> &mut GenericArchitectureModule;
 
     /// This is the core method for an emulator to do any running of instructions and
     /// setting of the program counter should an instruction require that.
@@ -195,8 +199,8 @@ impl<'a> dyn Emulator + 'a {
     /// to set a function return value. (this should also take
     /// care of any argument cleanup or other return time tasks
     /// for the calling convention)
-    fn exec_call_return(&self, value: i32, calling_convention: String, argc: Option<i32>) -> Result<i32>{
-        let data = self.get_emulator_data();
+    fn exec_call_return(&mut self, value: i32, calling_convention: String, argc: Option<i32>) -> Result<i32>{
+        let data = self.get_emulator_data().clone();
         if let Some(cc) = data.emu_calling_conventions.get(&calling_convention) {
             return Ok(cc.exec_call_return(self, value, argc))
         }
@@ -375,7 +379,7 @@ pub trait CallingConvention {
         emulator.read_memory_format(sp + data.ret_addr_def.1, "<P")[0]
     }
     
-    fn exec_call_return(&self, emulator: &dyn Emulator, value: i32, argc: Option<i32>) -> i32 {
+    fn exec_call_return(&self, emulator: &mut dyn Emulator, value: i32, argc: Option<i32>) -> i32 {
         let data = self.get_data();
         let sp = emulator.get_stack_counter();
         let ret_addr = self.get_return_address(emulator);

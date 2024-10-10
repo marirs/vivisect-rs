@@ -67,10 +67,11 @@ pub const ENDIAN_LSB: i32 = 0;
 /// Big-endian
 pub const ENDIAN_MSB: i32 = 1;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 /// The default endianness for the architecture.
 pub enum Endianess {
     /// Little-endian
+    #[default]
     Little,
     /// Big-endian
     Big,
