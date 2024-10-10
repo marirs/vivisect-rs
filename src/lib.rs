@@ -310,8 +310,8 @@ pub mod pe;
 
 #[cfg(feature = "archive")]
 pub mod archive;
-mod impapi;
-mod envi;
+pub mod impapi;
+pub mod envi;
 
 #[cfg(test)]
 mod tests {
